@@ -235,7 +235,7 @@ body {
 .stat-card {
   background: white; border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; position: relative; overflow: hidden;
 }
-.stat-card::before { content: ''; position: absolute; top: 0; left: 0; width: 3px; height: 100%; background: var(--navy); }
+
 
 .stat-value { font-family: 'Bebas Neue', sans-serif; font-size: 36px; color: var(--navy); line-height: 1; letter-spacing: 0.02em; }
 

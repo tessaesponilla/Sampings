@@ -12,7 +12,7 @@ import StaffQueue from './components/staff/StaffQueue';
 import WalkInOrder from './components/staff/WalkInOrder';
 import OwnerDashboard from './components/owner/OwnerDashboard';
 import StaffMgmt from './components/owner/StaffMgmt';
-import ProfileUpdate from './components/common/ProfileUpdate';
+import ProfileSettings from './components/common/ProfileSettings';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -59,14 +59,14 @@ function App() {
         switch (currentView) {
           case 'dashboard': return <CustomerDashboard user={user} />;
           case 'new-order': return <CustomerOrderForm />;
-          case 'profile': return <ProfileUpdate />;
+          case 'profile': return <ProfileSettings />;
           default: return <CustomerDashboard user={user} />;
         }
       case 'Staff':
         switch (currentView) {
           case 'dashboard': return <StaffQueue user={user} />;
           case 'walk-in': return <WalkInOrder />;
-          case 'profile': return <ProfileUpdate />;
+          case 'profile': return <ProfileSettings />;
           default: return <StaffQueue user={user} />;
         }
       case 'Owner':
@@ -75,7 +75,7 @@ function App() {
           case 'staff-mgmt': return <StaffMgmt />;
           case 'all-orders': return <StaffQueue user={user} readOnly={true} />;
           case 'reports': return <div className="card">Reports & PDF Export (Coming Soon)</div>;
-          case 'profile': return <ProfileUpdate />;
+          case 'profile': return <ProfileSettings />;
           default: return <OwnerDashboard />;
         }
       default:
