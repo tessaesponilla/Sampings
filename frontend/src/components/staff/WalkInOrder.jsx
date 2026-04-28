@@ -4,13 +4,10 @@ const WalkInOrder = () => {
   const [activeTab, setActiveTab] = useState(1);
   const [formData, setFormData] = useState({
     customerName: '',
-    isWalkInGuest: true,
     jerseyType: '',
     quantity: 1,
     sizes: '',
     trackingPreference: 'qr',
-    paymentMethod: 'cash',
-    amountReceived: '',
     notes: '',
   });
   const [isProcessing, setIsProcessing] = useState(false);
@@ -22,43 +19,35 @@ const WalkInOrder = () => {
       label: 'Full Sublimation',
       price: 1250.00,
       displayPrice: '₱1,250.00',
-      description: 'All-over print, moisture-wicking fabric'
+      description: 'All-over print, moisture-wicking fabric',
+      eta: '5-7 business days'
     },
     {
       value: 'semi-sublimation',
       label: 'Semi-Sublimation',
       price: 900.00,
       displayPrice: '₱900.00',
-      description: 'Partial sublimation with solid panels'
+      description: 'Partial sublimation with solid panels',
+      eta: '4-6 business days'
     },
     {
       value: 'basic-print',
       label: 'Basic Print',
       price: 600.00,
       displayPrice: '₱600.00',
-      description: 'Standard printed design'
+      description: 'Standard printed design on performance fabric',
+      eta: '3-5 business days'
     },
   ];
 
   const trackingOptions = [
-    { value: 'qr', label: 'Receipt with QR Code (Recommended)', icon: '🔲' },
-    { value: 'sms', label: 'SMS Updates', icon: '📱' },
+    { value: 'qr', label: 'Receipt with QR Code', icon: '🔲' },
     { value: 'none', label: 'No Tracking', icon: '🚫' },
   ];
 
-  const paymentMethods = [
-    { value: 'cash', label: 'Cash', icon: '💵' },
-    { value: 'gcash', label: 'GCash', icon: '📱' },
-    { value: 'maya', label: 'Maya', icon: '🏦' },
-    { value: 'bank_transfer', label: 'Bank Transfer', icon: '🏛️' },
-  ];
-
   const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value,
-    }));
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const showMessage = (type, text) => {
@@ -68,61 +57,62 @@ const WalkInOrder = () => {
 
   const selectedJersey = jerseyOptions.find(j => j.value === formData.jerseyType);
   const selectedTracking = trackingOptions.find(t => t.value === formData.trackingPreference);
-  const selectedPayment = paymentMethods.find(p => p.value === formData.paymentMethod);
 
   const subtotal = selectedJersey ? selectedJersey.price * parseInt(formData.quantity || 1) : 0;
   const serviceFee = subtotal > 0 ? 50 : 0;
   const total = subtotal + serviceFee;
-  const change = formData.amountReceived ? parseFloat(formData.amountReceived) - total : 0;
 
-  const canProceedToPayment = formData.customerName && formData.jerseyType && formData.quantity >= 1;
-  const canProcess = canProceedToPayment && formData.paymentMethod;
+  const canProceedToDetails = formData.jerseyType !== '';
+  const canProceedToReceipt = formData.jerseyType && formData.customerName && formData.quantity >= 1;
+
+  const generateOrderNumber = () => {
+    const date = new Date();
+    const timestamp = date.getTime().toString().slice(-6);
+    return `WALK-${timestamp}`;
+  };
+
+  const currentDate = new Date().toLocaleDateString('en-PH', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+
+  const currentTime = new Date().toLocaleTimeString('en-PH', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 
   const handleProcessOrder = async (e) => {
     e.preventDefault();
 
     if (!formData.customerName) {
       showMessage('error', 'Please enter customer name');
-      setActiveTab(1);
-      return;
-    }
-    if (!formData.jerseyType) {
-      showMessage('error', 'Please select a jersey type');
-      setActiveTab(1);
+      setActiveTab(2);
       return;
     }
     if (!formData.quantity || formData.quantity < 1) {
       showMessage('error', 'Quantity must be at least 1');
-      setActiveTab(1);
-      return;
-    }
-    if (formData.paymentMethod === 'cash' && (!formData.amountReceived || parseFloat(formData.amountReceived) < total)) {
-      showMessage('error', 'Amount received is insufficient');
       setActiveTab(2);
       return;
     }
 
     setIsProcessing(true);
+    const newOrderNumber = generateOrderNumber();
 
     try {
-      // Simulate processing
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise(resolve => setTimeout(resolve, 1500));
 
       showMessage('success', formData.trackingPreference === 'qr'
-        ? 'Order processed! QR Code generated and ready to print.'
-        : 'Order processed successfully!'
+        ? `Order #${newOrderNumber} processed! Receipt printed successfully.`
+        : `Order #${newOrderNumber} processed successfully!`
       );
 
-      // Reset form
       setFormData({
         customerName: '',
-        isWalkInGuest: true,
         jerseyType: '',
         quantity: 1,
         sizes: '',
         trackingPreference: 'qr',
-        paymentMethod: 'cash',
-        amountReceived: '',
         notes: '',
       });
       setActiveTab(1);
@@ -134,31 +124,13 @@ const WalkInOrder = () => {
   };
 
   const tabs = [
-    { id: 1, label: 'Customer & Jersey', icon: '👕', step: 'Step 1' },
-    { id: 2, label: 'Payment', icon: '💳', step: 'Step 2' },
-    { id: 3, label: 'Review & Print', icon: '🖨️', step: 'Step 3' },
+    { id: 1, label: 'Jersey Style', icon: '👕', step: 'Step 1' },
+    { id: 2, label: 'Order Details', icon: '📝', step: 'Step 2' },
+    { id: 3, label: 'Receipt', icon: '🧾', step: 'Step 3' },
   ];
 
   return (
     <div className="walkin-container">
-      {/* Header */}
-      <div className="walkin-header">
-        <div className="walkin-header-content">
-          <div className="walkin-icon">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <path d="M18 20v-4M6 20V10"/>
-              <path d="M15 20v-8M9 20v-4"/>
-              <path d="M12 20V6"/>
-              <circle cx="12" cy="4" r="2"/>
-            </svg>
-          </div>
-          <div>
-            <h1 className="bebas walkin-title">Walk-in Transaction</h1>
-            <p className="walkin-subtitle">Quick order processing for in-store customers</p>
-          </div>
-        </div>
-      </div>
-
       {/* Progress Steps */}
       <div className="progress-steps">
         {tabs.map((tab, index) => (
@@ -166,7 +138,7 @@ const WalkInOrder = () => {
             <div
               className={`progress-step ${activeTab === tab.id ? 'active' : ''} ${activeTab > tab.id ? 'completed' : ''}`}
               onClick={() => {
-                if (tab.id === 1 || (tab.id === 2 && canProceedToPayment) || (tab.id === 3 && canProceedToPayment)) {
+                if (tab.id === 1 || (tab.id === 2 && canProceedToDetails) || (tab.id === 3 && canProceedToReceipt)) {
                   setActiveTab(tab.id);
                 }
               }}
@@ -195,12 +167,59 @@ const WalkInOrder = () => {
       )}
 
       <form onSubmit={handleProcessOrder}>
-        {/* Tab 1: Customer & Jersey */}
+        {/* Step 1: Jersey Style */}
         {activeTab === 1 && (
           <div className="form-card">
             <div className="form-card-header">
-              <h3>Customer & Jersey Details</h3>
-              <p>Enter customer information and select jersey</p>
+              <h3>Select Jersey Style</h3>
+              <p>Choose the type of jersey for this order</p>
+            </div>
+
+            <div className="jersey-options">
+              {jerseyOptions.map((option) => (
+                <div
+                  key={option.value}
+                  className={`jersey-option-card ${formData.jerseyType === option.value ? 'selected' : ''}`}
+                  onClick={() => setFormData(prev => ({ ...prev, jerseyType: option.value }))}
+                >
+                  <div className="jersey-option-content">
+                    <div className="jersey-option-header">
+                      <div className="jersey-radio">
+                        <div className={`radio-circle ${formData.jerseyType === option.value ? 'checked' : ''}`}>
+                          {formData.jerseyType === option.value && <div className="radio-dot" />}
+                        </div>
+                      </div>
+                      <div className="jersey-option-info">
+                        <h4>{option.label}</h4>
+                        <span className="jersey-price">{option.displayPrice}</span>
+                      </div>
+                    </div>
+                    <p className="jersey-description">{option.description}</p>
+                    <span className="jersey-eta">⏱️ {option.eta}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="form-actions" style={{ marginTop: '1.5rem' }}>
+              <button
+                type="button"
+                className="btn-yellow"
+                onClick={() => setActiveTab(2)}
+                disabled={!canProceedToDetails}
+              >
+                Continue to Details →
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Step 2: Order Details */}
+        {activeTab === 2 && (
+          <div className="form-card">
+            <div className="form-card-header">
+              <h3>Order Details</h3>
+              <p>Enter customer information and order specifications</p>
             </div>
 
             <div className="form-grid">
@@ -220,44 +239,15 @@ const WalkInOrder = () => {
                     name="customerName"
                     value={formData.customerName}
                     onChange={handleChange}
-                    placeholder="Enter name or 'Walk-in Guest'"
+                    placeholder="Enter customer name"
                   />
                 </div>
-                <label className="checkbox-label" style={{ marginTop: '8px' }}>
-                  <input
-                    type="checkbox"
-                    name="isWalkInGuest"
-                    checked={formData.isWalkInGuest}
-                    onChange={handleChange}
-                  />
-                  <span>Mark as Walk-in Guest</span>
-                </label>
               </div>
 
-              {/* Jersey Selection */}
-              <div className="form-group">
-                <label>Jersey Type</label>
-                <div className="jersey-options">
-                  {jerseyOptions.map((option) => (
-                    <div
-                      key={option.value}
-                      className={`jersey-option-card compact ${formData.jerseyType === option.value ? 'selected' : ''}`}
-                      onClick={() => setFormData(prev => ({ ...prev, jerseyType: option.value }))}
-                    >
-                      <div className="jersey-option-header">
-                        <div className="jersey-radio">
-                          <div className={`radio-circle ${formData.jerseyType === option.value ? 'checked' : ''}`}>
-                            {formData.jerseyType === option.value && <div className="radio-dot" />}
-                          </div>
-                        </div>
-                        <div className="jersey-option-info">
-                          <h4>{option.label}</h4>
-                          <span className="jersey-price">{option.displayPrice}</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+              {/* Selected Jersey Display */}
+              <div className="selected-jersey-badge">
+                <span className="badge-label">Selected Jersey:</span>
+                <span className="badge-value">{selectedJersey?.label} — {selectedJersey?.displayPrice}</span>
               </div>
 
               {/* Quantity & Price */}
@@ -326,92 +316,6 @@ const WalkInOrder = () => {
                   ))}
                 </div>
               </div>
-            </div>
-
-            <div className="form-actions" style={{ marginTop: '1.5rem' }}>
-              <button
-                type="button"
-                className="btn-yellow"
-                onClick={() => setActiveTab(2)}
-                disabled={!canProceedToPayment}
-              >
-                Continue to Payment →
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Tab 2: Payment */}
-        {activeTab === 2 && (
-          <div className="form-card">
-            <div className="form-card-header">
-              <h3>Payment Details</h3>
-              <p>Select payment method and process transaction</p>
-            </div>
-
-            <div className="form-grid">
-              {/* Order Summary */}
-              <div className="mini-summary">
-                <div className="mini-summary-row">
-                  <span>Item</span>
-                  <span>{selectedJersey?.label || '—'} × {formData.quantity}</span>
-                </div>
-                <div className="mini-summary-row">
-                  <span>Subtotal</span>
-                  <span>₱{subtotal.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</span>
-                </div>
-                <div className="mini-summary-row">
-                  <span>Service Fee</span>
-                  <span>₱{serviceFee.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</span>
-                </div>
-                <div className="mini-summary-row total">
-                  <span>Total Due</span>
-                  <span className="total-amount">₱{total.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</span>
-                </div>
-              </div>
-
-              {/* Payment Method */}
-              <div className="form-group">
-                <label>Payment Method</label>
-                <div className="payment-options">
-                  {paymentMethods.map((method) => (
-                    <div
-                      key={method.value}
-                      className={`payment-card ${formData.paymentMethod === method.value ? 'selected' : ''}`}
-                      onClick={() => setFormData(prev => ({ ...prev, paymentMethod: method.value }))}
-                    >
-                      <span className="payment-icon">{method.icon}</span>
-                      <span className="payment-label">{method.label}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Cash Amount (only for cash payments) */}
-              {formData.paymentMethod === 'cash' && (
-                <div className="form-group">
-                  <label htmlFor="amountReceived">Amount Received</label>
-                  <div className="input-wrapper">
-                    <span className="input-icon">₱</span>
-                    <input
-                      id="amountReceived"
-                      type="number"
-                      name="amountReceived"
-                      value={formData.amountReceived}
-                      onChange={handleChange}
-                      placeholder="Enter amount tendered"
-                      min="0"
-                      step="0.01"
-                    />
-                  </div>
-                  {formData.amountReceived && parseFloat(formData.amountReceived) >= total && (
-                    <div className="change-due">
-                      <span>Change due:</span>
-                      <span className="change-amount">₱{change.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</span>
-                    </div>
-                  )}
-                </div>
-              )}
 
               {/* Notes */}
               <div className="form-group">
@@ -440,75 +344,141 @@ const WalkInOrder = () => {
                 type="button"
                 className="btn-yellow"
                 onClick={() => setActiveTab(3)}
-                disabled={!formData.paymentMethod}
+                disabled={!canProceedToReceipt}
               >
-                Review Order →
+                View Receipt →
               </button>
             </div>
           </div>
         )}
 
-        {/* Tab 3: Review & Print */}
+        {/* Step 3: Receipt */}
         {activeTab === 3 && (
           <div className="form-card">
             <div className="form-card-header">
-              <h3>Review & Process</h3>
-              <p>Confirm all details before printing</p>
+              <h3>Receipt Preview</h3>
+              <p>Review all details and print receipt</p>
             </div>
 
-            <div className="review-grid">
-              <div className="review-item">
-                <span className="review-label">Customer</span>
-                <span className="review-value">{formData.customerName || 'Walk-in Guest'}</span>
+            {/* Receipt */}
+            <div className="receipt-summary">
+              {/* Receipt Header */}
+              <div className="receipt-header">
+                <div className="receipt-logo">⚡ SAMPINGS</div>
+                <span className="receipt-subtitle">JERSEY PRINTING SERVICES</span>
+                <span className="receipt-subtitle" style={{ fontSize: '9px', marginTop: '2px' }}>Official Receipt</span>
               </div>
-              <div className="review-item">
-                <span className="review-label">Jersey</span>
-                <span className="review-value">{selectedJersey?.label} ({selectedJersey?.displayPrice})</span>
-              </div>
-              <div className="review-item">
-                <span className="review-label">Quantity</span>
-                <span className="review-value">{formData.quantity} pc{formData.quantity > 1 ? 's' : ''}</span>
-              </div>
-              {formData.sizes && (
-                <div className="review-item full-width">
-                  <span className="review-label">Size Breakdown</span>
-                  <span className="review-value">{formData.sizes}</span>
+
+              <div className="receipt-divider-line"></div>
+
+              {/* Receipt Info */}
+              <div className="receipt-info-grid">
+                <div className="receipt-info-item">
+                  <span className="receipt-info-label">Order #</span>
+                  <span className="receipt-info-value">{generateOrderNumber()}</span>
                 </div>
-              )}
-              <div className="review-item">
-                <span className="review-label">Tracking</span>
-                <span className="review-value">{selectedTracking?.icon} {selectedTracking?.label}</span>
+                <div className="receipt-info-item">
+                  <span className="receipt-info-label">Date</span>
+                  <span className="receipt-info-value">{currentDate}</span>
+                </div>
+                <div className="receipt-info-item">
+                  <span className="receipt-info-label">Time</span>
+                  <span className="receipt-info-value">{currentTime}</span>
+                </div>
               </div>
-              <div className="review-item">
-                <span className="review-label">Payment</span>
-                <span className="review-value">{selectedPayment?.icon} {selectedPayment?.label}</span>
+
+              <div className="receipt-divider-line"></div>
+
+              {/* Customer Details */}
+              <div className="receipt-section">
+                <span className="receipt-section-title">CUSTOMER</span>
+                <div className="receipt-detail-row">
+                  <span>Name</span>
+                  <span className="receipt-detail-value">{formData.customerName}</span>
+                </div>
               </div>
-              {formData.paymentMethod === 'cash' && formData.amountReceived && (
-                <>
-                  <div className="review-item">
-                    <span className="review-label">Amount Received</span>
-                    <span className="review-value">₱{parseFloat(formData.amountReceived).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</span>
+
+              <div className="receipt-divider-dashed"></div>
+
+              {/* Order Details */}
+              <div className="receipt-section">
+                <span className="receipt-section-title">ORDER DETAILS</span>
+                <div className="receipt-detail-row">
+                  <span>Jersey Type</span>
+                  <span className="receipt-detail-value">{selectedJersey?.label}</span>
+                </div>
+                <div className="receipt-detail-row">
+                  <span>Price per Unit</span>
+                  <span className="receipt-detail-value">{selectedJersey?.displayPrice}</span>
+                </div>
+                <div className="receipt-detail-row">
+                  <span>Quantity</span>
+                  <span className="receipt-detail-value">{formData.quantity} pc{formData.quantity > 1 ? 's' : ''}</span>
+                </div>
+                {formData.sizes && (
+                  <div className="receipt-detail-row">
+                    <span>Sizes</span>
+                    <span className="receipt-detail-value">{formData.sizes}</span>
                   </div>
-                  <div className="review-item">
-                    <span className="review-label">Change</span>
-                    <span className="review-value" style={{ color: 'var(--green)', fontWeight: 700 }}>
-                      ₱{change.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
-                    </span>
+                )}
+                {formData.notes && (
+                  <div className="receipt-detail-row">
+                    <span>Notes</span>
+                    <span className="receipt-detail-value">{formData.notes}</span>
+                  </div>
+                )}
+                <div className="receipt-detail-row">
+                  <span>Tracking</span>
+                  <span className="receipt-detail-value">{selectedTracking?.icon} {selectedTracking?.label}</span>
+                </div>
+              </div>
+
+              <div className="receipt-divider-line"></div>
+
+              {/* Pricing */}
+              <div className="receipt-section">
+                <span className="receipt-section-title">PRICING</span>
+                <div className="receipt-detail-row">
+                  <span>Subtotal</span>
+                  <span className="receipt-detail-value">₱{subtotal.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</span>
+                </div>
+                <div className="receipt-detail-row">
+                  <span>Service Fee</span>
+                  <span className="receipt-detail-value">₱{serviceFee.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</span>
+                </div>
+                <div className="receipt-detail-row total-row">
+                  <span>TOTAL DUE</span>
+                  <span className="receipt-total-price">₱{total.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</span>
+                </div>
+              </div>
+
+              {/* QR Code */}
+              {formData.trackingPreference === 'qr' && (
+                <>
+                  <div className="receipt-divider-dashed"></div>
+                  <div className="qr-section">
+                    <div className="qr-code-box">
+                      <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" color="var(--navy)">
+                        <rect x="3" y="3" width="7" height="7" rx="1"/>
+                        <rect x="14" y="3" width="7" height="7" rx="1"/>
+                        <rect x="3" y="14" width="7" height="7" rx="1"/>
+                        <rect x="14" y="14" width="3" height="3" rx="0.5"/>
+                        <rect x="18" y="14" width="3" height="3" rx="0.5"/>
+                        <rect x="14" y="18" width="3" height="3" rx="0.5"/>
+                        <rect x="18" y="18" width="3" height="3" rx="0.5"/>
+                      </svg>
+                    </div>
+                    <span className="qr-note">Scan to track your order</span>
                   </div>
                 </>
               )}
-            </div>
 
-            {/* Final Total */}
-            <div className="order-summary" style={{ marginTop: '1.5rem' }}>
-              <div className="summary-header">
-                <h3>Transaction Total</h3>
-              </div>
-              <div className="summary-details">
-                <div className="summary-row total">
-                  <span>Total Amount</span>
-                  <span className="summary-total-price">₱{total.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</span>
-                </div>
+              <div className="receipt-divider-line"></div>
+
+              {/* Footer */}
+              <div className="receipt-footer">
+                <span>Thank you for your order!</span>
+                <span style={{ fontSize: '9px', marginTop: '2px' }}>This serves as your official receipt</span>
               </div>
             </div>
 
@@ -518,7 +488,7 @@ const WalkInOrder = () => {
                 className="btn-secondary"
                 onClick={() => setActiveTab(2)}
               >
-                ← Back
+                ← Edit Details
               </button>
               <button
                 type="submit"
@@ -537,7 +507,7 @@ const WalkInOrder = () => {
                       <path d="M6 12H4a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-4a2 2 0 0 0-2-2h-2"/>
                       <rect x="6" y="14" width="12" height="8"/>
                     </svg>
-                    Process Order & Print QR
+                    Print Receipt
                   </>
                 )}
               </button>
