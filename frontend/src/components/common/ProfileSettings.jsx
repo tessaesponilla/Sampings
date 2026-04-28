@@ -140,25 +140,6 @@ const ProfileSettings = ({ user }) => {
 
   return (
     <div className="profile-container">
-      {/* Header */}
-      <div className="profile-header">
-        <div className="profile-header-content">
-          <div className="profile-avatar profile-avatar-large">
-            {getInitials(formData.name)}
-          </div>
-          <div className="profile-header-info">
-            <div className="profile-header-top">
-              <h1 className="bebas profile-title">Account Settings</h1>
-              {user?.role && (
-                <span className="badge" style={{ background: getRoleBadgeColor(user.role), fontSize: '12px', padding: '4px 12px' }}>
-                  {user.role}
-                </span>
-              )}
-            </div>
-            <p className="profile-subtitle">Manage your personal information and security settings</p>
-          </div>
-        </div>
-      </div>
 
       {/* Tabs */}
       <div className="profile-tabs">
