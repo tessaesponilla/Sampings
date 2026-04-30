@@ -177,31 +177,7 @@ const CustomerOrderForm = () => {
               </div>
             </div>
 
-            {/* Minimum Quantity & Free Item Promo */}
-            <div style={{
-              marginTop: '20px',
-              padding: '16px',
-              background: 'var(--green-bg)',
-              border: '1px solid rgba(22, 163, 74, 0.2)',
-              borderRadius: '10px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px'
-            }}>
-              <div style={{ fontSize: '28px' }}>🎁</div>
-              <div>
-                <div style={{ fontWeight: 700, fontSize: '14px', color: 'var(--green)' }}>
-                  Bulk Order Promo
-                </div>
-                <div style={{ fontSize: '13px', color: 'var(--text)', lineHeight: '1.5' }}>
-                  Order <strong>16+ jerseys</strong> and get <strong>1 FREE</strong>.
-                </div>
-                <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '4px' }}>
-                  ⏱️ Orders ready 1 week after production completion
-                </div>
-              </div>
-            </div>
-
+            
             <button
               className="btn-yellow"
               style={{ marginTop: '20px' }}
