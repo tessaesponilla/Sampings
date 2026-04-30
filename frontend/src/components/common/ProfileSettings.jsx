@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+ import React, { useState } from 'react';
 
 const ProfileSettings = ({ user }) => {
   const [formData, setFormData] = useState({
