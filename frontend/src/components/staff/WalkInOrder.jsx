@@ -1,520 +1,375 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 
 const WalkInOrder = () => {
   const [activeTab, setActiveTab] = useState(1);
   const [formData, setFormData] = useState({
-    customerName: '',
-    jerseyType: '',
-    quantity: 1,
-    sizes: '',
-    trackingPreference: 'qr',
+    contactPerson: '',
+    contactNumber: '',
+    jerseyType: '', // 'full-set' or 'shirt-only'
+    items: [{ size: '', number: '', surname: '' }],
+    designImage: null,
     notes: '',
   });
+
   const [isProcessing, setIsProcessing] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
+  const fileInputRef = useRef(null);
 
+  // Updated jersey options: Full Set and Shirt Only
   const jerseyOptions = [
     {
-      value: 'full-sublimation',
-      label: 'Full Sublimation',
-      price: 1250.00,
-      displayPrice: '₱1,250.00',
-      description: 'All-over print, moisture-wicking fabric',
-      eta: '5-7 business days'
+      value: 'full-set',
+      label: 'Full Jersey Set',
+      price: 800,
+      description: 'Complete uniform: shirt & shorts',
+      icon: '👕🩳'
     },
     {
-      value: 'semi-sublimation',
-      label: 'Semi-Sublimation',
-      price: 900.00,
-      displayPrice: '₱900.00',
-      description: 'Partial sublimation with solid panels',
-      eta: '4-6 business days'
-    },
-    {
-      value: 'basic-print',
-      label: 'Basic Print',
-      price: 600.00,
-      displayPrice: '₱600.00',
-      description: 'Standard printed design on performance fabric',
-      eta: '3-5 business days'
+      value: 'shirt-only',
+      label: 'Shirt Only (Top)',
+      price: 400,
+      description: 'Jersey shirt only, no bottom shorts',
+      icon: '👕'
     },
   ];
 
-  const trackingOptions = [
-    { value: 'qr', label: 'Receipt with QR Code', icon: '🔲' },
-    { value: 'none', label: 'No Tracking', icon: '🚫' },
-  ];
+  const selectedJersey = jerseyOptions.find(j => j.value === formData.jerseyType);
+  const basePrice = selectedJersey ? selectedJersey.price : 0;
+  const quantity = formData.items.length;
 
-  const handleChange = (e) => {
+  // Calculate free items (every 16th item is free)
+  const freeItems = Math.floor(quantity / 16);
+  const paidItems = quantity - freeItems;
+  const totalAmount = basePrice * paidItems;
+
+  const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const showMessage = (type, text) => {
-    setMessage({ type, text });
-    setTimeout(() => setMessage({ type: '', text: '' }), 5000);
+  const handleItemChange = (index, field, value) => {
+    const newItems = [...formData.items];
+    newItems[index][field] = value;
+    setFormData(prev => ({ ...prev, items: newItems }));
   };
 
-  const selectedJersey = jerseyOptions.find(j => j.value === formData.jerseyType);
-  const selectedTracking = trackingOptions.find(t => t.value === formData.trackingPreference);
-
-  const subtotal = selectedJersey ? selectedJersey.price * parseInt(formData.quantity || 1) : 0;
-  const serviceFee = subtotal > 0 ? 50 : 0;
-  const total = subtotal + serviceFee;
-
-  const canProceedToDetails = formData.jerseyType !== '';
-  const canProceedToReceipt = formData.jerseyType && formData.customerName && formData.quantity >= 1;
-
-  const generateOrderNumber = () => {
-    const date = new Date();
-    const timestamp = date.getTime().toString().slice(-6);
-    return `WALK-${timestamp}`;
+  const addItemRow = () => {
+    setFormData(prev => ({
+      ...prev,
+      items: [...prev.items, { size: '', number: '', surname: '' }]
+    }));
   };
 
-  const currentDate = new Date().toLocaleDateString('en-PH', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
+  const removeItemRow = (index) => {
+    if (formData.items.length > 1) {
+      const newItems = formData.items.filter((_, i) => i !== index);
+      setFormData(prev => ({ ...prev, items: newItems }));
+    }
+  };
 
-  const currentTime = new Date().toLocaleTimeString('en-PH', {
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData(prev => ({ ...prev, designImage: reader.result }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
-  const handleProcessOrder = async (e) => {
+  const handleProcess = async (e) => {
     e.preventDefault();
-
-    if (!formData.customerName) {
-      showMessage('error', 'Please enter customer name');
-      setActiveTab(2);
-      return;
-    }
-    if (!formData.quantity || formData.quantity < 1) {
-      showMessage('error', 'Quantity must be at least 1');
-      setActiveTab(2);
-      return;
-    }
-
     setIsProcessing(true);
-    const newOrderNumber = generateOrderNumber();
-
-    try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
-      showMessage('success', formData.trackingPreference === 'qr'
-        ? `Order #${newOrderNumber} processed! Receipt printed successfully.`
-        : `Order #${newOrderNumber} processed successfully!`
-      );
-
-      setFormData({
-        customerName: '',
-        jerseyType: '',
-        quantity: 1,
-        sizes: '',
-        trackingPreference: 'qr',
-        notes: '',
+    setTimeout(() => {
+      setMessage({
+        type: 'success',
+        text: `Order confirmed! ₱${totalAmount.toLocaleString()} - ${quantity} jerseys (${freeItems} free). Ready 1 week after production.`
       });
-      setActiveTab(1);
-    } catch (error) {
-      showMessage('error', 'Failed to process order. Please try again.');
-    } finally {
       setIsProcessing(false);
-    }
+    }, 1500);
   };
 
-  const tabs = [
-    { id: 1, label: 'Jersey Style', icon: '👕', step: 'Step 1' },
-    { id: 2, label: 'Order Details', icon: '📝', step: 'Step 2' },
-    { id: 3, label: 'Receipt', icon: '🧾', step: 'Step 3' },
-  ];
+  // Reset message when changing tabs
+  useEffect(() => {
+    setMessage({ type: '', text: '' });
+  }, [activeTab]);
 
   return (
-    <div className="walkin-container">
-      {/* Progress Steps */}
-      <div className="progress-steps">
-        {tabs.map((tab, index) => (
-          <React.Fragment key={tab.id}>
-            <div
-              className={`progress-step ${activeTab === tab.id ? 'active' : ''} ${activeTab > tab.id ? 'completed' : ''}`}
-              onClick={() => {
-                if (tab.id === 1 || (tab.id === 2 && canProceedToDetails) || (tab.id === 3 && canProceedToReceipt)) {
-                  setActiveTab(tab.id);
-                }
-              }}
-            >
-              <div className="step-circle">
-                {activeTab > tab.id ? '✓' : tab.icon}
-              </div>
-              <div className="step-info">
-                <span className="step-label">{tab.step}</span>
-                <span className="step-title">{tab.label}</span>
-              </div>
-            </div>
-            {index < tabs.length - 1 && (
-              <div className={`step-connector ${activeTab > tab.id ? 'completed' : ''}`} />
-            )}
-          </React.Fragment>
+    <div style={{ color: '#fff' }}>
+      {/* Steps Indicator */}
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '25px' }}>
+        {[1, 2, 3].map(step => (
+          <div key={step} style={{
+            flex: 1, height: '4px', background: activeTab >= step ? 'var(--yellow)' : 'rgba(255,255,255,0.1)',
+            borderRadius: '10px', transition: '0.3s'
+          }} />
         ))}
       </div>
 
-      {/* Message Alert */}
-      {message.text && (
-        <div className={`alert alert-${message.type === 'success' ? 'success' : 'error'}`}>
-          <span>{message.type === 'success' ? '✅' : '❌'}</span>
-          {message.text}
-        </div>
-      )}
-
-      <form onSubmit={handleProcessOrder}>
-        {/* Step 1: Jersey Style */}
+      <div className="glass-card">
+        {/* ========== STEP 1: ORDER TYPE & CONTACT ========== */}
         {activeTab === 1 && (
-          <div className="form-card">
-            <div className="form-card-header">
-              <h3>Select Jersey Style</h3>
-              <p>Choose the type of jersey for this order</p>
-            </div>
-
-            <div className="jersey-options">
-              {jerseyOptions.map((option) => (
-                <div
-                  key={option.value}
-                  className={`jersey-option-card ${formData.jerseyType === option.value ? 'selected' : ''}`}
-                  onClick={() => setFormData(prev => ({ ...prev, jerseyType: option.value }))}
-                >
-                  <div className="jersey-option-content">
-                    <div className="jersey-option-header">
-                      <div className="jersey-radio">
-                        <div className={`radio-circle ${formData.jerseyType === option.value ? 'checked' : ''}`}>
-                          {formData.jerseyType === option.value && <div className="radio-dot" />}
-                        </div>
-                      </div>
-                      <div className="jersey-option-info">
-                        <h4>{option.label}</h4>
-                        <span className="jersey-price">{option.displayPrice}</span>
-                      </div>
-                    </div>
-                    <p className="jersey-description">{option.description}</p>
-                    <span className="jersey-eta">⏱️ {option.eta}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="form-actions" style={{ marginTop: '1.5rem' }}>
-              <button
-                type="button"
-                className="btn-yellow"
-                onClick={() => setActiveTab(2)}
-                disabled={!canProceedToDetails}
-              >
-                Continue to Details →
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Step 2: Order Details */}
-        {activeTab === 2 && (
-          <div className="form-card">
-            <div className="form-card-header">
-              <h3>Order Details</h3>
-              <p>Enter customer information and order specifications</p>
-            </div>
-
-            <div className="form-grid">
-              {/* Customer Name */}
+          <div>
+            <h3 className="bebas" style={{ fontSize: '24px', marginBottom: '20px' }}>1. Order Type & Contact</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
               <div className="form-group">
-                <label htmlFor="customerName">Customer Name</label>
-                <div className="input-wrapper">
-                  <span className="input-icon">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                      <circle cx="12" cy="7" r="4"/>
-                    </svg>
-                  </span>
-                  <input
-                    id="customerName"
-                    type="text"
-                    name="customerName"
-                    value={formData.customerName}
-                    onChange={handleChange}
-                    placeholder="Enter customer name"
-                  />
-                </div>
+                <label className="form-label">Contact Person</label>
+                <input className="form-input" name="contactPerson" value={formData.contactPerson} onChange={handleInputChange} style={{ background: 'rgba(255,255,255,0.05)', color: '#fff', width: '100%' }} placeholder="Customer Full Name" />
               </div>
-
-              {/* Selected Jersey Display */}
-              <div className="selected-jersey-badge">
-                <span className="badge-label">Selected Jersey:</span>
-                <span className="badge-value">{selectedJersey?.label} — {selectedJersey?.displayPrice}</span>
-              </div>
-
-              {/* Quantity & Price */}
-              <div className="form-row">
-                <div className="form-group" style={{ flex: 1 }}>
-                  <label htmlFor="quantity">Quantity</label>
-                  <div className="input-wrapper">
-                    <span className="input-icon">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <line x1="12" y1="5" x2="12" y2="19"/>
-                        <line x1="5" y1="12" x2="19" y2="12"/>
-                      </svg>
-                    </span>
-                    <input
-                      id="quantity"
-                      type="number"
-                      name="quantity"
-                      value={formData.quantity}
-                      onChange={handleChange}
-                      min="1"
-                      max="100"
-                    />
-                  </div>
-                </div>
-                <div className="form-group" style={{ flex: 1 }}>
-                  <label>Price per Unit</label>
-                  <div className="input-wrapper">
-                    <span className="input-icon">₱</span>
-                    <input
-                      type="text"
-                      value={selectedJersey?.displayPrice || '₱0.00'}
-                      readOnly
-                      className="readonly-input"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Sizes */}
               <div className="form-group">
-                <label htmlFor="sizes">Size Breakdown (optional)</label>
-                <textarea
-                  id="sizes"
-                  name="sizes"
-                  className="form-textarea"
-                  value={formData.sizes}
-                  onChange={handleChange}
-                  placeholder="e.g., S: 2, M: 3, L: 1"
-                  rows="2"
-                />
+                <label className="form-label">Contact Number</label>
+                <input className="form-input" name="contactNumber" value={formData.contactNumber} onChange={handleInputChange} style={{ background: 'rgba(255,255,255,0.05)', color: '#fff', width: '100%' }} placeholder="+63 9XX" />
               </div>
 
-              {/* Tracking Preference */}
-              <div className="form-group">
-                <label>Tracking Preference</label>
-                <div className="tracking-options">
-                  {trackingOptions.map((option) => (
+              {/* Jersey Selection - Updated with two options */}
+              <div className="form-group" style={{ gridColumn: 'span 2' }}>
+                <label className="form-label">Jersey Selection</label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '14px' }}>
+                  {jerseyOptions.map(j => (
                     <div
-                      key={option.value}
-                      className={`tracking-card ${formData.trackingPreference === option.value ? 'selected' : ''}`}
-                      onClick={() => setFormData(prev => ({ ...prev, trackingPreference: option.value }))}
+                      key={j.value}
+                      onClick={() => setFormData(p => ({...p, jerseyType: j.value}))}
+                      style={{
+                        padding: '18px', borderRadius: '14px', cursor: 'pointer',
+                        background: formData.jerseyType === j.value ? 'rgba(250,204,21,0.12)' : 'rgba(255,255,255,0.05)',
+                        border: `2px solid ${formData.jerseyType === j.value ? 'var(--yellow)' : 'rgba(255,255,255,0.1)'}`,
+                        transition: '0.2s', position: 'relative'
+                      }}
                     >
-                      <span className="tracking-icon">{option.icon}</span>
-                      <span className="tracking-label">{option.label}</span>
+                      <div style={{ fontSize: '24px', marginBottom: '8px' }}>{j.icon}</div>
+                      <div style={{ fontWeight: 700, fontSize: '16px', marginBottom: '4px' }}>{j.label}</div>
+                      <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', marginBottom: '8px' }}>{j.description}</div>
+                      <div style={{ fontWeight: 800, fontSize: '20px', color: 'var(--yellow)' }}>₱{j.price}</div>
+                      {formData.jerseyType === j.value && (
+                        <div style={{ position: 'absolute', top: '12px', right: '12px', background: 'var(--yellow)', color: '#000', width: '24px', height: '24px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 700 }}>✓</div>
+                      )}
                     </div>
                   ))}
                 </div>
               </div>
+            </div>
 
-              {/* Notes */}
-              <div className="form-group">
-                <label htmlFor="notes">Additional Notes (optional)</label>
-                <textarea
-                  id="notes"
-                  name="notes"
-                  className="form-textarea"
-                  value={formData.notes}
-                  onChange={handleChange}
-                  placeholder="Any special instructions..."
-                  rows="2"
-                />
+            {/* Minimum Quantity Notice */}
+            <div style={{
+              marginTop: '20px', padding: '14px 18px',
+              background: 'rgba(250,204,21,0.08)',
+              border: '1px solid rgba(250,204,21,0.2)',
+              borderRadius: '10px',
+              display: 'flex', alignItems: 'center', gap: '10px'
+            }}>
+              <span style={{ fontSize: '20px' }}>🎁</span>
+              <div>
+                <div style={{ fontWeight: 600, fontSize: '14px', color: 'var(--yellow)' }}>Free Item Promo</div>
+                <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)' }}>
+                  Order <strong>16 jerseys</strong> and get <strong>1 FREE jersey</strong>.
+                </div>
               </div>
             </div>
 
-            <div className="form-actions" style={{ marginTop: '1.5rem', justifyContent: 'space-between' }}>
-              <button
-                type="button"
-                className="btn-secondary"
-                onClick={() => setActiveTab(1)}
-              >
-                ← Back
-              </button>
-              <button
-                type="button"
-                className="btn-yellow"
-                onClick={() => setActiveTab(3)}
-                disabled={!canProceedToReceipt}
-              >
-                View Receipt →
-              </button>
-            </div>
+            <button className="btn-yellow" style={{ marginTop: '25px' }} onClick={() => setActiveTab(2)}>
+              Continue to Details →
+            </button>
           </div>
         )}
 
-        {/* Step 3: Receipt */}
-        {activeTab === 3 && (
-          <div className="form-card">
-            <div className="form-card-header">
-              <h3>Receipt Preview</h3>
-              <p>Review all details and print receipt</p>
-            </div>
+        {/* ========== STEP 2: DESIGN & ITEM LIST ========== */}
+        {activeTab === 2 && (
+          <div>
+            <h3 className="bebas" style={{ fontSize: '24px', marginBottom: '20px' }}>2. Design & Item List</h3>
 
-            {/* Receipt */}
-            <div className="receipt-summary">
-              {/* Receipt Header */}
-              <div className="receipt-header">
-                <div className="receipt-logo">⚡ SAMPINGS</div>
-                <span className="receipt-subtitle">JERSEY PRINTING SERVICES</span>
-                <span className="receipt-subtitle" style={{ fontSize: '9px', marginTop: '2px' }}>Official Receipt</span>
-              </div>
-
-              <div className="receipt-divider-line"></div>
-
-              {/* Receipt Info */}
-              <div className="receipt-info-grid">
-                <div className="receipt-info-item">
-                  <span className="receipt-info-label">Order #</span>
-                  <span className="receipt-info-value">{generateOrderNumber()}</span>
-                </div>
-                <div className="receipt-info-item">
-                  <span className="receipt-info-label">Date</span>
-                  <span className="receipt-info-value">{currentDate}</span>
-                </div>
-                <div className="receipt-info-item">
-                  <span className="receipt-info-label">Time</span>
-                  <span className="receipt-info-value">{currentTime}</span>
-                </div>
-              </div>
-
-              <div className="receipt-divider-line"></div>
-
-              {/* Customer Details */}
-              <div className="receipt-section">
-                <span className="receipt-section-title">CUSTOMER</span>
-                <div className="receipt-detail-row">
-                  <span>Name</span>
-                  <span className="receipt-detail-value">{formData.customerName}</span>
-                </div>
-              </div>
-
-              <div className="receipt-divider-dashed"></div>
-
-              {/* Order Details */}
-              <div className="receipt-section">
-                <span className="receipt-section-title">ORDER DETAILS</span>
-                <div className="receipt-detail-row">
-                  <span>Jersey Type</span>
-                  <span className="receipt-detail-value">{selectedJersey?.label}</span>
-                </div>
-                <div className="receipt-detail-row">
-                  <span>Price per Unit</span>
-                  <span className="receipt-detail-value">{selectedJersey?.displayPrice}</span>
-                </div>
-                <div className="receipt-detail-row">
-                  <span>Quantity</span>
-                  <span className="receipt-detail-value">{formData.quantity} pc{formData.quantity > 1 ? 's' : ''}</span>
-                </div>
-                {formData.sizes && (
-                  <div className="receipt-detail-row">
-                    <span>Sizes</span>
-                    <span className="receipt-detail-value">{formData.sizes}</span>
-                  </div>
-                )}
-                {formData.notes && (
-                  <div className="receipt-detail-row">
-                    <span>Notes</span>
-                    <span className="receipt-detail-value">{formData.notes}</span>
-                  </div>
-                )}
-                <div className="receipt-detail-row">
-                  <span>Tracking</span>
-                  <span className="receipt-detail-value">{selectedTracking?.icon} {selectedTracking?.label}</span>
-                </div>
-              </div>
-
-              <div className="receipt-divider-line"></div>
-
-              {/* Pricing */}
-              <div className="receipt-section">
-                <span className="receipt-section-title">PRICING</span>
-                <div className="receipt-detail-row">
-                  <span>Subtotal</span>
-                  <span className="receipt-detail-value">₱{subtotal.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</span>
-                </div>
-                <div className="receipt-detail-row">
-                  <span>Service Fee</span>
-                  <span className="receipt-detail-value">₱{serviceFee.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</span>
-                </div>
-                <div className="receipt-detail-row total-row">
-                  <span>TOTAL DUE</span>
-                  <span className="receipt-total-price">₱{total.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</span>
-                </div>
-              </div>
-
-              {/* QR Code */}
-              {formData.trackingPreference === 'qr' && (
-                <>
-                  <div className="receipt-divider-dashed"></div>
-                  <div className="qr-section">
-                    <div className="qr-code-box">
-                      <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" color="var(--navy)">
-                        <rect x="3" y="3" width="7" height="7" rx="1"/>
-                        <rect x="14" y="3" width="7" height="7" rx="1"/>
-                        <rect x="3" y="14" width="7" height="7" rx="1"/>
-                        <rect x="14" y="14" width="3" height="3" rx="0.5"/>
-                        <rect x="18" y="14" width="3" height="3" rx="0.5"/>
-                        <rect x="14" y="18" width="3" height="3" rx="0.5"/>
-                        <rect x="18" y="18" width="3" height="3" rx="0.5"/>
-                      </svg>
-                    </div>
-                    <span className="qr-note">Scan to track your order</span>
-                  </div>
-                </>
-              )}
-
-              <div className="receipt-divider-line"></div>
-
-              {/* Footer */}
-              <div className="receipt-footer">
-                <span>Thank you for your order!</span>
-                <span style={{ fontSize: '9px', marginTop: '2px' }}>This serves as your official receipt</span>
-              </div>
-            </div>
-
-            <div className="form-actions" style={{ marginTop: '1.5rem', justifyContent: 'space-between' }}>
-              <button
-                type="button"
-                className="btn-secondary"
-                onClick={() => setActiveTab(2)}
+            <div style={{ marginBottom: '25px' }}>
+              <label className="form-label">Design Reference Image</label>
+              <div
+                onClick={() => fileInputRef.current.click()}
+                style={{
+                  border: '2px dashed rgba(255,255,255,0.2)', padding: '30px', borderRadius: '16px',
+                  textAlign: 'center', cursor: 'pointer', background: 'rgba(255,255,255,0.02)',
+                  transition: '0.2s'
+                }}
               >
-                ← Edit Details
-              </button>
-              <button
-                type="submit"
-                className="btn-yellow btn-print"
-                disabled={isProcessing}
-              >
-                {isProcessing ? (
-                  <>
-                    <span className="spinner"></span>
-                    Processing...
-                  </>
+                {formData.designImage ? (
+                  <img src={formData.designImage} alt="Preview" style={{ maxHeight: '180px', borderRadius: '10px' }} />
                 ) : (
-                  <>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '8px' }}>
-                      <polyline points="6 9 6 2 18 2 18 9"/>
-                      <path d="M6 12H4a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-4a2 2 0 0 0-2-2h-2"/>
-                      <rect x="6" y="14" width="12" height="8"/>
-                    </svg>
-                    Print Receipt
-                  </>
+                  <div style={{ color: 'rgba(255,255,255,0.4)' }}>
+                    <div style={{ fontSize: '24px', marginBottom: '8px' }}>📸</div>
+                    Click to upload sample design
+                  </div>
                 )}
-              </button>
+                <input type="file" ref={fileInputRef} onChange={handleImageUpload} hidden accept="image/*" />
+              </div>
+            </div>
+
+            <label className="form-label">
+              Shirt Specifications
+              <span style={{ marginLeft: '8px', fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>
+                ({quantity} items · {freeItems > 0 && `${freeItems} free`})
+              </span>
+            </label>
+            <div style={{ overflowX: 'auto', marginBottom: '15px' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                    <th style={{ padding: '10px', textAlign: 'left', fontSize: '11px', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' }}>Size</th>
+                    <th style={{ padding: '10px', textAlign: 'left', fontSize: '11px', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' }}>Number</th>
+                    <th style={{ padding: '10px', textAlign: 'left', fontSize: '11px', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' }}>Surname</th>
+                    <th style={{ width: '40px' }}></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {formData.items.map((item, idx) => (
+                    <tr key={idx} style={{
+                      borderBottom: '1px solid rgba(255,255,255,0.05)',
+                      background: (idx + 1) % 16 === 0 ? 'rgba(250,204,21,0.06)' : 'transparent'
+                    }}>
+                      <td style={{ padding: '8px' }}>
+                        <select
+                          className="form-input"
+                          value={item.size}
+                          onChange={(e) => handleItemChange(idx, 'size', e.target.value)}
+                          style={{ background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: '13px' }}
+                        >
+                          <option value="" style={{ color: '#000' }}>—</option>
+                          {['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', 'Kids'].map(s => (
+                            <option key={s} value={s} style={{ color: '#000' }}>{s}</option>
+                          ))}
+                        </select>
+                      </td>
+                      <td style={{ padding: '8px' }}>
+                        <input
+                          className="form-input"
+                          value={item.number}
+                          onChange={(e) => handleItemChange(idx, 'number', e.target.value)}
+                          style={{ background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: '13px' }}
+                          placeholder="00"
+                        />
+                      </td>
+                      <td style={{ padding: '8px' }}>
+                        <input
+                          className="form-input"
+                          value={item.surname}
+                          onChange={(e) => handleItemChange(idx, 'surname', e.target.value)}
+                          style={{ background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: '13px' }}
+                          placeholder="NAME"
+                        />
+                      </td>
+                      <td style={{ padding: '8px', textAlign: 'center' }}>
+                        {(idx + 1) % 16 === 0 ? (
+                          <span style={{ color: 'var(--yellow)', fontSize: '11px', fontWeight: 700 }}>FREE</span>
+                        ) : (
+                          <button
+                            onClick={() => removeItemRow(idx)}
+                            style={{ background: 'transparent', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: '16px' }}
+                          >
+                            ✕
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <button
+              onClick={addItemRow}
+              style={{
+                background: 'rgba(255,255,255,0.1)', color: '#fff', border: 'none',
+                padding: '8px 16px', borderRadius: '8px', fontSize: '12px',
+                cursor: 'pointer', marginBottom: '25px', fontWeight: 600
+              }}
+            >
+              + Add Jersey Row
+            </button>
+
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button className="btn-outline-glass" onClick={() => setActiveTab(1)}>← Back</button>
+              <button className="btn-yellow" onClick={() => setActiveTab(3)}>Review Final Order</button>
             </div>
           </div>
         )}
-      </form>
+
+        {/* ========== STEP 3: FINAL REVIEW & RECEIPT ========== */}
+        {activeTab === 3 && (
+          <div>
+            <h3 className="bebas" style={{ fontSize: '24px', marginBottom: '20px' }}>3. Final Review & Receipt</h3>
+
+            {/* Order Summary */}
+            <div style={{ background: 'rgba(0,0,0,0.3)', padding: '25px', borderRadius: '16px', marginBottom: '25px', border: '1px solid rgba(255,255,255,0.05)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px' }}>Customer:</span>
+                <span style={{ fontWeight: 600 }}>{formData.contactPerson || '—'}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px' }}>Jersey Type:</span>
+                <span style={{ fontWeight: 600 }}>{selectedJersey?.label || '—'}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px' }}>Total Quantity:</span>
+                <span style={{ fontWeight: 600 }}>{quantity} Jersey(s)</span>
+              </div>
+              {freeItems > 0 && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                  <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px' }}>Free Items:</span>
+                  <span style={{ fontWeight: 600, color: 'var(--yellow)' }}>{freeItems} FREE</span>
+                </div>
+              )}
+              <div style={{ height: '1px', background: 'rgba(255,255,255,0.1)', margin: '15px 0' }}></div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px' }}>Price per item:</span>
+                <span style={{ fontWeight: 600 }}>₱{basePrice.toLocaleString()}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px' }}>Paid items:</span>
+                <span style={{ fontWeight: 600 }}>{paidItems} × ₱{basePrice.toLocaleString()}</span>
+              </div>
+              <div style={{ height: '1px', background: 'rgba(255,255,255,0.1)', margin: '15px 0' }}></div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '16px' }}>Total Amount:</span>
+                <span style={{ color: 'var(--yellow)', fontWeight: 800, fontSize: '28px' }}>₱{totalAmount.toLocaleString()}</span>
+              </div>
+            </div>
+
+            {/* Production Timeline Notice */}
+            <div style={{
+              padding: '14px 18px',
+              background: 'rgba(250,204,21,0.08)',
+              border: '1px solid rgba(250,204,21,0.2)',
+              borderRadius: '10px',
+              marginBottom: '25px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px'
+            }}>
+              <span style={{ fontSize: '20px' }}>⏱️</span>
+              <div>
+                <div style={{ fontWeight: 600, fontSize: '14px', color: 'var(--yellow)' }}>Production Timeline</div>
+                <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)' }}>
+                  Order will be ready <strong>1 week after production is complete</strong>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button className="btn-outline-glass" onClick={() => setActiveTab(2)}>← Back</button>
+              <button className="btn-yellow" onClick={handleProcess} disabled={isProcessing}>
+                {isProcessing ? 'Processing Order...' : 'Generate Receipt & Confirm'}
+              </button>
+            </div>
+
+            {message.text && (
+              <div style={{
+                marginTop: '20px', padding: '14px',
+                background: message.type === 'success' ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)',
+                color: message.type === 'success' ? '#86efac' : '#fca5a5',
+                borderRadius: '8px', fontSize: '14px', textAlign: 'center',
+                border: `1px solid ${message.type === 'success' ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)'}`
+              }}>
+                {message.text}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
