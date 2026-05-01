@@ -1,21 +1,25 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useAuth } from '../../contexts/AuthContext';
+import { createOrder, uploadDesignImage } from '../../services/orderService';
 
 const WalkInOrder = () => {
+  const { userData } = useAuth();
   const [activeTab, setActiveTab] = useState(1);
   const [formData, setFormData] = useState({
-    contactPerson: '',
-    contactNumber: '',
-    jerseyStyle: '', // 'full-set' or 'shirt-only'
-    designNotes: '',
-    items: [{ size: '', number: '', surname: '' }],
+    customerName: '',
+    customerContact: '',
+    customerEmail: '',
+    jerseyStyle: '',
     designImage: null,
+    designImageFile: null,
+    items: [{ size: '', number: '', surname: '' }],
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
+  const [uploadProgress, setUploadProgress] = useState('');
   const fileInputRef = useRef(null);
 
-  // Updated jersey options: Full Set and Shirt Only
   const jerseyOptions = [
     {
       value: 'full-set',
@@ -25,8 +29,8 @@ const WalkInOrder = () => {
       description: 'Complete uniform with shirt and shorts'
     },
     {
-      value: 'shirt-only',
-      label: 'Shirt Only (Top)',
+      value: 'top-only',
+      label: 'Top Only (Shirt)',
       price: 400,
       icon: '👕',
       description: 'Jersey shirt only, no bottom shorts'
@@ -36,9 +40,7 @@ const WalkInOrder = () => {
   const selectedJersey = jerseyOptions.find(j => j.value === formData.jerseyStyle);
   const basePrice = selectedJersey ? selectedJersey.price : 0;
   const quantity = formData.items.length;
-
-  // Calculate free items (every 16th item is free)
-  const freeItems = Math.floor(quantity / 16);
+  const freeItems = quantity >= 16 ? Math.floor(quantity / 16) : 0;
   const paidItems = quantity - freeItems;
   const totalAmount = basePrice * paidItems;
 
@@ -72,7 +74,11 @@ const WalkInOrder = () => {
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setFormData(prev => ({ ...prev, designImage: reader.result }));
+        setFormData(prev => ({ 
+          ...prev, 
+          designImage: reader.result,
+          designImageFile: file 
+        }));
       };
       reader.readAsDataURL(file);
     }
@@ -80,25 +86,90 @@ const WalkInOrder = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log('WALK-IN SUBMIT TRIGGERED');
+
+    // Validate customer info
+    if (!formData.customerName || !formData.customerContact) {
+      setMessage({ type: 'error', text: 'Please enter customer name and contact number.' });
+      return;
+    }
+
+    // Check jersey selected
+    if (!formData.jerseyStyle) {
+      setMessage({ type: 'error', text: 'Please select a jersey type.' });
+      return;
+    }
+
+    // Check all item details filled
+    const hasEmpty = formData.items.some(item => !item.size || !item.number || !item.surname);
+    if (hasEmpty) {
+      setMessage({ type: 'error', text: 'Please fill in all size, number, and surname fields.' });
+      return;
+    }
+
     setIsSubmitting(true);
-    // Simulate API Call
-    setTimeout(() => {
-      setMessage({
-        type: 'success',
-        text: `Order placed successfully! ${quantity} jerseys (${freeItems} free). Ready 1 week after production.`
+    setMessage({ type: '', text: '' });
+
+    try {
+      let designURL = '';
+      if (formData.designImageFile) {
+        setUploadProgress('Uploading design...');
+        const uploadResult = await uploadDesignImage(formData.designImageFile);
+        if (!uploadResult.success) {
+          setMessage({ type: 'error', text: 'Failed to upload design: ' + uploadResult.error });
+          setIsSubmitting(false);
+          setUploadProgress('');
+          return;
+        }
+        designURL = uploadResult.url;
+      }
+
+      setUploadProgress('Creating order...');
+      const orderResult = await createOrder({
+        jerseyType: formData.jerseyStyle,
+        designReferenceURL: designURL,
+        items: formData.items,
+        orderType: 'walk-in',
+        customerName: formData.customerName,
+        customerContact: formData.customerContact,
+        customerEmail: formData.customerEmail
       });
-      setIsSubmitting(false);
-    }, 1500);
+
+      if (orderResult.success) {
+        setMessage({
+          type: 'success',
+          text: `Walk-in order #${orderResult.orderId.slice(-6)} created! Total: ₱${orderResult.totalAmount.toLocaleString()}. Processed by: ${userData?.fullName}`
+        });
+        setTimeout(() => {
+          setFormData({
+            customerName: '',
+            customerContact: '',
+            customerEmail: '',
+            jerseyStyle: '',
+            designImage: null,
+            designImageFile: null,
+            items: [{ size: '', number: '', surname: '' }],
+          });
+          setActiveTab(1);
+          setMessage({ type: '', text: '' });
+        }, 3000);
+      } else {
+        setMessage({ type: 'error', text: 'Failed to create order: ' + orderResult.error });
+      }
+    } catch (error) {
+      setMessage({ type: 'error', text: 'Something went wrong: ' + error.message });
+    }
+
+    setIsSubmitting(false);
+    setUploadProgress('');
   };
 
-  // Reset message when changing tabs
   useEffect(() => {
     setMessage({ type: '', text: '' });
   }, [activeTab]);
 
   return (
     <div className="walkin-container">
-      {/* Progress Indicator */}
       <div style={{ display: 'flex', gap: '8px', marginBottom: '2rem' }}>
         {[1, 2, 3].map(step => (
           <div key={step} style={{
@@ -109,35 +180,55 @@ const WalkInOrder = () => {
       </div>
 
       <div className="card">
-        {/* ========== STEP 1: CONTACT & JERSEY SELECTION ========== */}
+        {/* STEP 1: CUSTOMER INFO & JERSEY */}
         {activeTab === 1 && (
           <div>
-            <h3 className="bebas" style={{ fontSize: '24px', marginBottom: '1.5rem' }}>1. Contact & Jersey Selection</h3>
+            <h3 className="bebas" style={{ fontSize: '24px', marginBottom: '1.5rem' }}>1. Customer & Jersey Type</h3>
+            
+            <div style={{ marginBottom: '16px' }}>
+              <p style={{ color: 'var(--muted)', fontSize: '14px' }}>
+                Walk-in order processed by: <strong>{userData?.fullName}</strong>
+              </p>
+            </div>
+
             <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
               <div className="form-group">
-                <label className="form-label">Contact Person</label>
+                <label className="form-label">Customer Full Name *</label>
                 <input 
                   className="form-input" 
-                  name="contactPerson" 
-                  value={formData.contactPerson} 
+                  name="customerName" 
+                  value={formData.customerName} 
                   onChange={handleInputChange} 
-                  placeholder="Full Name" 
+                  placeholder="Juan dela Cruz" 
                   style={{ width: '100%' }} 
+                  required
                 />
               </div>
               <div className="form-group">
-                <label className="form-label">Contact Number</label>
+                <label className="form-label">Contact Number *</label>
                 <input 
                   className="form-input" 
-                  name="contactNumber" 
-                  value={formData.contactNumber} 
+                  name="customerContact" 
+                  value={formData.customerContact} 
                   onChange={handleInputChange} 
-                  placeholder="+63 9XX" 
+                  placeholder="+63 912 345 6789" 
+                  style={{ width: '100%' }} 
+                  required
+                />
+              </div>
+              <div className="form-group" style={{ gridColumn: 'span 2' }}>
+                <label className="form-label">Email (Optional)</label>
+                <input 
+                  className="form-input" 
+                  name="customerEmail" 
+                  type="email"
+                  value={formData.customerEmail} 
+                  onChange={handleInputChange} 
+                  placeholder="customer@email.com" 
                   style={{ width: '100%' }} 
                 />
               </div>
 
-              {/* Jersey Selection Cards */}
               <div className="form-group" style={{ gridColumn: 'span 2' }}>
                 <label className="form-label">Select Jersey Type</label>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', marginTop: '8px' }}>
@@ -196,26 +287,24 @@ const WalkInOrder = () => {
               </div>
             </div>
 
-      
-
             <button
               className="btn-yellow"
               style={{ marginTop: '20px' }}
               onClick={() => setActiveTab(2)}
-              disabled={!formData.jerseyStyle}
+              disabled={!formData.jerseyStyle || !formData.customerName || !formData.customerContact}
             >
               Continue to Design & Sizes →
             </button>
           </div>
         )}
 
-        {/* ========== STEP 2: DESIGN & SIZES ========== */}
+        {/* STEP 2: DESIGN & SIZES */}
         {activeTab === 2 && (
           <div>
-            <h3 className="bebas" style={{ fontSize: '24px', marginBottom: '1.5rem' }}>2. Design & Sizes</h3>
+            <h3 className="bebas" style={{ fontSize: '24px', marginBottom: '1.5rem' }}>2. Design & Player Details</h3>
 
             <div style={{ marginBottom: '20px' }}>
-              <label className="form-label">Upload Design Reference</label>
+              <label className="form-label">Upload Design Reference (Optional)</label>
               <div
                 onClick={() => fileInputRef.current.click()}
                 style={{
@@ -226,18 +315,27 @@ const WalkInOrder = () => {
                 {formData.designImage ? (
                   <img src={formData.designImage} alt="Preview" style={{ maxHeight: '150px', borderRadius: '8px' }} />
                 ) : (
-                  <div style={{ color: 'var(--muted)' }}>📸 Click to upload image reference</div>
+                  <div style={{ color: 'var(--muted)' }}>📸 Click to upload design reference</div>
                 )}
                 <input type="file" ref={fileInputRef} onChange={handleImageUpload} hidden accept="image/*" />
               </div>
+              {formData.designImage && (
+                <button 
+                  onClick={() => setFormData(prev => ({ ...prev, designImage: null, designImageFile: null }))}
+                  style={{ marginTop: '8px', fontSize: '12px', color: 'red', background: 'none', border: 'none', cursor: 'pointer' }}
+                >
+                  Remove image
+                </button>
+              )}
             </div>
 
             <label className="form-label" style={{ marginBottom: '10px' }}>
-              Item Details (Size, Number, Surname)
+              Player Details (Size, Number, Surname)
               <span style={{ marginLeft: '8px', fontSize: '11px', color: 'var(--muted)', fontWeight: 400 }}>
-                ({quantity} items · {freeItems > 0 && `${freeItems} free`})
+                ({quantity} items)
               </span>
             </label>
+            
             <div style={{ overflowX: 'auto', marginBottom: '15px' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
@@ -254,7 +352,7 @@ const WalkInOrder = () => {
                       key={idx}
                       style={{
                         borderBottom: '1px solid var(--border)',
-                        background: (idx + 1) % 16 === 0 ? 'var(--green-bg)' : 'transparent'
+                        background: quantity >= 16 && (idx + 1) % 16 === 0 ? 'var(--green-bg)' : 'transparent'
                       }}
                     >
                       <td style={{ padding: '8px' }}>
@@ -265,7 +363,7 @@ const WalkInOrder = () => {
                           style={{ padding: '6px', fontSize: '12px' }}
                         >
                           <option value="">—</option>
-                          {['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', 'Kids'].map(s => <option key={s} value={s}>{s}</option>)}
+                          {['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL'].map(s => <option key={s} value={s}>{s}</option>)}
                         </select>
                       </td>
                       <td style={{ padding: '8px' }}>
@@ -274,7 +372,7 @@ const WalkInOrder = () => {
                           value={item.number} 
                           onChange={(e) => handleItemChange(idx, 'number', e.target.value)} 
                           placeholder="00" 
-                          style={{ padding: '6px', width: '50px', fontSize: '12px' }} 
+                          style={{ padding: '6px', width: '60px', fontSize: '12px' }} 
                         />
                       </td>
                       <td style={{ padding: '8px' }}>
@@ -282,12 +380,12 @@ const WalkInOrder = () => {
                           className="form-input" 
                           value={item.surname} 
                           onChange={(e) => handleItemChange(idx, 'surname', e.target.value)} 
-                          placeholder="Name" 
+                          placeholder="Surname" 
                           style={{ padding: '6px', width: '100%', fontSize: '12px' }} 
                         />
                       </td>
                       <td style={{ padding: '8px', textAlign: 'center' }}>
-                        {(idx + 1) % 16 === 0 ? (
+                        {quantity >= 16 && (idx + 1) % 16 === 0 ? (
                           <span style={{
                             background: 'var(--green)',
                             color: '#fff',
@@ -299,12 +397,7 @@ const WalkInOrder = () => {
                             FREE
                           </span>
                         ) : (
-                          <button 
-                            onClick={() => removeItemRow(idx)} 
-                            style={{ color: 'red', background: 'none', border: 'none', cursor: 'pointer' }}
-                          >
-                            ✕
-                          </button>
+                          <button onClick={() => removeItemRow(idx)} style={{ color: 'red', background: 'none', border: 'none', cursor: 'pointer' }}>✕</button>
                         )}
                       </td>
                     </tr>
@@ -312,36 +405,23 @@ const WalkInOrder = () => {
                 </tbody>
               </table>
             </div>
-            <button 
-              onClick={addItemRow} 
-              style={{ 
-                background: 'var(--off)', 
-                color: 'var(--text)', 
-                border: '1px solid var(--border2)', 
-                padding: '8px 16px', 
-                borderRadius: '8px', 
-                fontSize: '13px', 
-                cursor: 'pointer', 
-                marginBottom: '20px', 
-                fontWeight: 500 
-              }}
-            >
-              + Add Item
+            
+            <button onClick={addItemRow} style={{ background: 'var(--off)', color: 'var(--text)', border: '1px solid var(--border2)', padding: '8px 16px', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', marginBottom: '20px', fontWeight: 500 }}>
+              + Add Player
             </button>
 
-            {/* Quantity counter with free indicator */}
             <div style={{
               padding: '10px 14px',
-              background: quantity >= 16 ? 'var(--green-bg)' : 'var(--amber-bg)',
+              background: quantity >= 16 ? 'var(--green-bg)' : 'var(--accent2)',
               borderRadius: '8px',
               fontSize: '12px',
-              color: quantity >= 16 ? 'var(--green)' : 'var(--amber)',
+              color: quantity >= 16 ? 'var(--green)' : 'var(--navy)',
               fontWeight: 600,
               marginBottom: '20px'
             }}>
               {quantity >= 16
-                ? `✅ Great! ${quantity} items qualify for ${freeItems} free jersey(s)!`
-                : `⚠️ Add ${16 - quantity} more item(s) to get 1 FREE jersey`}
+                ? `✅ ${quantity} items qualify for ${freeItems} free jersey(s)!`
+                : `📋 ${quantity} item(s) in this order (16+ items get 1 free per 16)`}
             </div>
 
             <div style={{ display: 'flex', gap: '10px' }}>
@@ -351,77 +431,85 @@ const WalkInOrder = () => {
           </div>
         )}
 
-        {/* ========== STEP 3: REVIEW & SUBMIT ========== */}
+        {/* STEP 3: REVIEW & SUBMIT */}
         {activeTab === 3 && (
           <div>
-            <h3 className="bebas" style={{ fontSize: '24px', marginBottom: '1.5rem' }}>3. Review & Submit</h3>
+            <h3 className="bebas" style={{ fontSize: '24px', marginBottom: '1.5rem' }}>3. Review & Confirm</h3>
 
-            {/* Order Summary */}
+            {uploadProgress && (
+              <div style={{
+                padding: '10px 14px',
+                background: 'var(--accent2)',
+                borderRadius: '8px',
+                marginBottom: '16px',
+                fontSize: '13px',
+                color: 'var(--navy)'
+              }}>
+                ⏳ {uploadProgress}
+              </div>
+            )}
+
             <div style={{ background: 'var(--off)', padding: '20px', borderRadius: '12px', marginBottom: '20px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                <span style={{ color: 'var(--muted)' }}>Customer:</span>
+                <span style={{ fontWeight: 600 }}>{formData.customerName}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                <span style={{ color: 'var(--muted)' }}>Contact:</span>
+                <span>{formData.customerContact}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                <span style={{ color: 'var(--muted)' }}>Order Type:</span>
+                <span style={{ 
+                  background: 'var(--amber-bg)', 
+                  color: 'var(--amber)', 
+                  padding: '2px 10px', 
+                  borderRadius: '12px', 
+                  fontSize: '11px', 
+                  fontWeight: 700 
+                }}>WALK-IN</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
                 <span style={{ color: 'var(--muted)' }}>Jersey Type:</span>
-                <span style={{ fontWeight: 700 }}>{selectedJersey?.label}</span>
+                <span style={{ fontWeight: 600 }}>{selectedJersey?.label}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
                 <span style={{ color: 'var(--muted)' }}>Price per item:</span>
-                <span style={{ fontWeight: 700 }}>₱{basePrice.toLocaleString()}</span>
+                <span>₱{basePrice.toLocaleString()}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-                <span style={{ color: 'var(--muted)' }}>Total Quantity:</span>
-                <span style={{ fontWeight: 700 }}>{quantity} items</span>
+                <span style={{ color: 'var(--muted)' }}>Total Items:</span>
+                <span style={{ fontWeight: 600 }}>{quantity}</span>
               </div>
               {freeItems > 0 && (
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
                   <span style={{ color: 'var(--muted)' }}>Free Items:</span>
-                  <span style={{ fontWeight: 700, color: 'var(--green)' }}>{freeItems} FREE 🎁</span>
+                  <span style={{ fontWeight: 600, color: 'var(--green)' }}>{freeItems} FREE 🎁</span>
                 </div>
               )}
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-                <span style={{ color: 'var(--muted)' }}>Paid Items:</span>
-                <span style={{ fontWeight: 700 }}>{paidItems} × ₱{basePrice.toLocaleString()}</span>
-              </div>
               <hr style={{ border: 'none', borderTop: '2px solid var(--border)', margin: '12px 0' }} />
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: 'var(--text)', fontWeight: 600 }}>Total Amount:</span>
+                <span style={{ fontWeight: 600 }}>Total Amount:</span>
                 <span style={{
                   fontFamily: 'Bebas Neue, sans-serif',
                   color: 'var(--navy)',
                   fontWeight: 800,
-                  fontSize: '24px',
-                  letterSpacing: '0.03em'
+                  fontSize: '24px'
                 }}>
                   ₱{totalAmount.toLocaleString()}
                 </span>
               </div>
             </div>
 
-            {/* Production Timeline Notice */}
-            <div style={{
-              padding: '14px 16px',
-              background: '#fff9e5',
-              border: '1px solid rgba(250, 204, 21, 0.3)',
-              borderLeft: '4px solid var(--yellow)',
-              borderRadius: '0 8px 8px 0',
-              marginBottom: '20px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '10px'
-            }}>
-              <span style={{ fontSize: '20px' }}>⏱️</span>
-              <div>
-                <div style={{ fontWeight: 600, fontSize: '13px', color: 'var(--text)' }}>
-                  Production Timeline
-                </div>
-                <div style={{ fontSize: '12px', color: 'var(--muted)' }}>
-                  Your order will be ready <strong>1 week after production is complete</strong>
-                </div>
-              </div>
-            </div>
-
             <div style={{ display: 'flex', gap: '10px' }}>
               <button className="btn-secondary" onClick={() => setActiveTab(2)}>← Back</button>
-              <button className="btn-yellow" onClick={handleSubmit} disabled={isSubmitting}>
-                {isSubmitting ? 'Processing Order...' : '✅ Generate Receipt & Confirm'}
+              <button 
+                type="button"
+                className="btn-yellow" 
+                onClick={handleSubmit} 
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? 'Processing...' : '✅ Confirm Walk-in Order'}
               </button>
             </div>
 
@@ -433,8 +521,7 @@ const WalkInOrder = () => {
                 color: message.type === 'success' ? 'var(--green)' : 'var(--red)',
                 borderRadius: '8px',
                 fontSize: '13px',
-                fontWeight: 500,
-                border: `1px solid ${message.type === 'success' ? 'rgba(22, 163, 74, 0.2)' : 'rgba(220, 38, 38, 0.2)'}`
+                fontWeight: 500
               }}>
                 {message.text}
               </div>

@@ -1,21 +1,24 @@
 import React, { useState, useRef } from 'react';
+import { useAuth } from '../../contexts/AuthContext';
+import { createOrder, uploadDesignImage } from '../../services/orderService';
+import { QRCodeSVG } from 'qrcode.react';
 
 const CustomerOrderForm = () => {
+  const { currentUser, userData } = useAuth();
   const [activeTab, setActiveTab] = useState(1);
   const [formData, setFormData] = useState({
-    contactPerson: '',
-    contactNumber: '',
     jerseyStyle: '',
-    designNotes: '',
-    items: [{ size: '', number: '', surname: '' }],
     designImage: null,
+    designImageFile: null,
+    items: [{ size: '', number: '', surname: '' }],
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
+  const [uploadProgress, setUploadProgress] = useState('');
+  const [lastOrder, setLastOrder] = useState(null);
   const fileInputRef = useRef(null);
 
-  // Updated jersey options: Full Set and Shirt Only
   const jerseyOptions = [
     {
       value: 'full-set',
@@ -25,18 +28,13 @@ const CustomerOrderForm = () => {
       description: 'Complete uniform with shirt and shorts'
     },
     {
-      value: 'shirt-only',
-      label: 'Shirt Only (Top)',
+      value: 'top-only',
+      label: 'Top Only (Shirt)',
       price: 400,
       icon: '👕',
       description: 'Jersey shirt only, no bottom shorts'
     },
   ];
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
 
   const handleItemChange = (index, field, value) => {
     const newItems = [...formData.items];
@@ -63,7 +61,11 @@ const CustomerOrderForm = () => {
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setFormData(prev => ({ ...prev, designImage: reader.result }));
+        setFormData(prev => ({ 
+          ...prev, 
+          designImage: reader.result,
+          designImageFile: file 
+        }));
       };
       reader.readAsDataURL(file);
     }
@@ -71,29 +73,82 @@ const CustomerOrderForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log('SUBMIT TRIGGERED');
+
+    if (!formData.jerseyStyle) {
+      setMessage({ type: 'error', text: 'Please select a jersey type.' });
+      return;
+    }
+
+    const hasEmpty = formData.items.some(item => !item.size || !item.number || !item.surname);
+    if (hasEmpty) {
+      setMessage({ type: 'error', text: 'Please fill in all size, number, and surname fields.' });
+      return;
+    }
+
     setIsSubmitting(true);
-    // Simulate API Call
-    setTimeout(() => {
-      setMessage({
-        type: 'success',
-        text: `Order placed successfully! ${quantity} jerseys (${freeItems} free). Ready 1 week after production.`
+    setMessage({ type: '', text: '' });
+
+    try {
+      let designURL = '';
+      if (formData.designImageFile) {
+        setUploadProgress('Uploading design...');
+        const uploadResult = await uploadDesignImage(formData.designImageFile);
+        if (!uploadResult.success) {
+          setMessage({ type: 'error', text: 'Failed to upload design: ' + uploadResult.error });
+          setIsSubmitting(false);
+          setUploadProgress('');
+          return;
+        }
+        designURL = uploadResult.url;
+      }
+
+      setUploadProgress('Creating order...');
+      const orderResult = await createOrder({
+        jerseyType: formData.jerseyStyle,
+        designReferenceURL: designURL,
+        items: formData.items,
+        orderType: 'online'
       });
-      setIsSubmitting(false);
-    }, 1500);
+
+      if (orderResult.success) {
+        setLastOrder(orderResult);
+        setMessage({
+          type: 'success',
+          text: `Order #${orderResult.orderId.slice(-6)} placed successfully! Total: ₱${orderResult.totalAmount.toLocaleString()}.`
+        });
+      } else {
+        setMessage({ type: 'error', text: 'Failed to create order: ' + orderResult.error });
+      }
+    } catch (error) {
+      setMessage({ type: 'error', text: 'Something went wrong: ' + error.message });
+    }
+
+    setIsSubmitting(false);
+    setUploadProgress('');
+  };
+
+  const resetForm = () => {
+    setFormData({
+      jerseyStyle: '',
+      designImage: null,
+      designImageFile: null,
+      items: [{ size: '', number: '', surname: '' }],
+    });
+    setActiveTab(1);
+    setMessage({ type: '', text: '' });
+    setLastOrder(null);
   };
 
   const selectedJersey = jerseyOptions.find(j => j.value === formData.jerseyStyle);
   const quantity = formData.items.length;
   const basePrice = selectedJersey ? selectedJersey.price : 0;
-
-  // Calculate free items (every 16th item is free)
-  const freeItems = Math.floor(quantity / 16);
+  const freeItems = quantity >= 16 ? Math.floor(quantity / 16) : 0;
   const paidItems = quantity - freeItems;
   const totalAmount = basePrice * paidItems;
 
   return (
     <div className="order-form-container">
-      {/* Progress Indicator */}
       <div style={{ display: 'flex', gap: '8px', marginBottom: '2rem' }}>
         {[1, 2, 3].map(step => (
           <div key={step} style={{
@@ -104,80 +159,71 @@ const CustomerOrderForm = () => {
       </div>
 
       <div className="card">
-        {/* ========== STEP 1: CONTACT & JERSEY SELECTION ========== */}
+        {/* STEP 1: JERSEY SELECTION */}
         {activeTab === 1 && (
           <div>
-            <h3 className="bebas" style={{ fontSize: '24px', marginBottom: '1.5rem' }}>1. Contact & Jersey Selection</h3>
-            <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
-              <div className="form-group">
-                <label className="form-label">Contact Person</label>
-                <input className="form-input" name="contactPerson" value={formData.contactPerson} onChange={handleInputChange} placeholder="Full Name" style={{ width: '100%' }} />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Contact Number</label>
-                <input className="form-input" name="contactNumber" value={formData.contactNumber} onChange={handleInputChange} placeholder="+63 9XX" style={{ width: '100%' }} />
-              </div>
-
-              {/* Jersey Selection Cards */}
-              <div className="form-group" style={{ gridColumn: 'span 2' }}>
-                <label className="form-label">Select Jersey Type</label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', marginTop: '8px' }}>
-                  {jerseyOptions.map(j => (
-                    <div
-                      key={j.value}
-                      onClick={() => setFormData(prev => ({ ...prev, jerseyStyle: j.value }))}
-                      style={{
-                        padding: '18px',
-                        borderRadius: '12px',
-                        cursor: 'pointer',
-                        border: `2px solid ${formData.jerseyStyle === j.value ? 'var(--navy)' : 'var(--border2)'}`,
-                        background: formData.jerseyStyle === j.value ? 'var(--accent2)' : 'var(--white)',
-                        transition: 'all 0.2s ease',
-                        position: 'relative'
-                      }}
-                    >
-                      <div style={{ fontSize: '28px', marginBottom: '8px' }}>{j.icon}</div>
-                      <div style={{ fontWeight: 700, fontSize: '15px', color: 'var(--text)', marginBottom: '4px' }}>
-                        {j.label}
-                      </div>
-                      <div style={{ fontSize: '12px', color: 'var(--muted)', marginBottom: '8px' }}>
-                        {j.description}
-                      </div>
-                      <div style={{
-                        fontFamily: 'Bebas Neue, sans-serif',
-                        fontSize: '22px',
-                        color: 'var(--navy)',
-                        letterSpacing: '0.03em',
-                        fontWeight: 700
-                      }}>
-                        ₱{j.price.toLocaleString()}
-                      </div>
-                      {formData.jerseyStyle === j.value && (
-                        <div style={{
-                          position: 'absolute',
-                          top: '12px',
-                          right: '12px',
-                          background: 'var(--navy)',
-                          color: '#fff',
-                          width: '24px',
-                          height: '24px',
-                          borderRadius: '50%',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontSize: '14px',
-                          fontWeight: 700
-                        }}>
-                          ✓
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
+            <h3 className="bebas" style={{ fontSize: '24px', marginBottom: '1.5rem' }}>1. Select Jersey Type</h3>
+            
+            <div style={{ marginBottom: '16px' }}>
+              <p style={{ color: 'var(--muted)', fontSize: '14px' }}>
+                Welcome, <strong>{userData?.fullName}</strong>! Select your jersey type to begin.
+              </p>
             </div>
 
-            
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px' }}>
+              {jerseyOptions.map(j => (
+                <div
+                  key={j.value}
+                  onClick={() => setFormData(prev => ({ ...prev, jerseyStyle: j.value }))}
+                  style={{
+                    padding: '18px',
+                    borderRadius: '12px',
+                    cursor: 'pointer',
+                    border: `2px solid ${formData.jerseyStyle === j.value ? 'var(--navy)' : 'var(--border2)'}`,
+                    background: formData.jerseyStyle === j.value ? 'var(--accent2)' : 'var(--white)',
+                    transition: 'all 0.2s ease',
+                    position: 'relative'
+                  }}
+                >
+                  <div style={{ fontSize: '28px', marginBottom: '8px' }}>{j.icon}</div>
+                  <div style={{ fontWeight: 700, fontSize: '15px', color: 'var(--text)', marginBottom: '4px' }}>
+                    {j.label}
+                  </div>
+                  <div style={{ fontSize: '12px', color: 'var(--muted)', marginBottom: '8px' }}>
+                    {j.description}
+                  </div>
+                  <div style={{
+                    fontFamily: 'Bebas Neue, sans-serif',
+                    fontSize: '22px',
+                    color: 'var(--navy)',
+                    letterSpacing: '0.03em',
+                    fontWeight: 700
+                  }}>
+                    ₱{j.price.toLocaleString()}
+                  </div>
+                  {formData.jerseyStyle === j.value && (
+                    <div style={{
+                      position: 'absolute',
+                      top: '12px',
+                      right: '12px',
+                      background: 'var(--navy)',
+                      color: '#fff',
+                      width: '24px',
+                      height: '24px',
+                      borderRadius: '50%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '14px',
+                      fontWeight: 700
+                    }}>
+                      ✓
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
             <button
               className="btn-yellow"
               style={{ marginTop: '20px' }}
@@ -189,13 +235,13 @@ const CustomerOrderForm = () => {
           </div>
         )}
 
-        {/* ========== STEP 2: DESIGN & SIZES ========== */}
+        {/* STEP 2: DESIGN & SIZES */}
         {activeTab === 2 && (
           <div>
-            <h3 className="bebas" style={{ fontSize: '24px', marginBottom: '1.5rem' }}>2. Design & Sizes</h3>
+            <h3 className="bebas" style={{ fontSize: '24px', marginBottom: '1.5rem' }}>2. Design & Player Details</h3>
 
             <div style={{ marginBottom: '20px' }}>
-              <label className="form-label">Upload Design Reference</label>
+              <label className="form-label">Upload Design Reference (Optional)</label>
               <div
                 onClick={() => fileInputRef.current.click()}
                 style={{
@@ -206,18 +252,27 @@ const CustomerOrderForm = () => {
                 {formData.designImage ? (
                   <img src={formData.designImage} alt="Preview" style={{ maxHeight: '150px', borderRadius: '8px' }} />
                 ) : (
-                  <div style={{ color: 'var(--muted)' }}>📸 Click to upload image reference</div>
+                  <div style={{ color: 'var(--muted)' }}>📸 Click to upload design reference</div>
                 )}
                 <input type="file" ref={fileInputRef} onChange={handleImageUpload} hidden accept="image/*" />
               </div>
+              {formData.designImage && (
+                <button 
+                  onClick={() => setFormData(prev => ({ ...prev, designImage: null, designImageFile: null }))}
+                  style={{ marginTop: '8px', fontSize: '12px', color: 'red', background: 'none', border: 'none', cursor: 'pointer' }}
+                >
+                  Remove image
+                </button>
+              )}
             </div>
 
             <label className="form-label" style={{ marginBottom: '10px' }}>
-              Item Details (Size, Number, Surname)
+              Player Details (Size, Number, Surname)
               <span style={{ marginLeft: '8px', fontSize: '11px', color: 'var(--muted)', fontWeight: 400 }}>
-                ({quantity} items · {freeItems > 0 && `${freeItems} free`})
+                ({quantity} items)
               </span>
             </label>
+            
             <div style={{ overflowX: 'auto', marginBottom: '15px' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
@@ -234,7 +289,7 @@ const CustomerOrderForm = () => {
                       key={idx}
                       style={{
                         borderBottom: '1px solid var(--border)',
-                        background: (idx + 1) % 16 === 0 ? 'var(--green-bg)' : 'transparent'
+                        background: quantity >= 16 && (idx + 1) % 16 === 0 ? 'var(--green-bg)' : 'transparent'
                       }}
                     >
                       <td style={{ padding: '8px' }}>
@@ -244,13 +299,13 @@ const CustomerOrderForm = () => {
                         </select>
                       </td>
                       <td style={{ padding: '8px' }}>
-                        <input className="form-input" value={item.number} onChange={(e) => handleItemChange(idx, 'number', e.target.value)} placeholder="00" style={{ padding: '6px', width: '50px', fontSize: '12px' }} />
+                        <input className="form-input" value={item.number} onChange={(e) => handleItemChange(idx, 'number', e.target.value)} placeholder="00" style={{ padding: '6px', width: '60px', fontSize: '12px' }} />
                       </td>
                       <td style={{ padding: '8px' }}>
-                        <input className="form-input" value={item.surname} onChange={(e) => handleItemChange(idx, 'surname', e.target.value)} placeholder="Name" style={{ padding: '6px', width: '100%', fontSize: '12px' }} />
+                        <input className="form-input" value={item.surname} onChange={(e) => handleItemChange(idx, 'surname', e.target.value)} placeholder="Surname" style={{ padding: '6px', width: '100%', fontSize: '12px' }} />
                       </td>
                       <td style={{ padding: '8px', textAlign: 'center' }}>
-                        {(idx + 1) % 16 === 0 ? (
+                        {quantity >= 16 && (idx + 1) % 16 === 0 ? (
                           <span style={{
                             background: 'var(--green)',
                             color: '#fff',
@@ -270,21 +325,21 @@ const CustomerOrderForm = () => {
                 </tbody>
               </table>
             </div>
-            <button className="action-btn" onClick={addItemRow} style={{ marginBottom: '20px' }}>+ Add Item</button>
+            
+            <button className="action-btn" onClick={addItemRow} style={{ marginBottom: '20px' }}>+ Add Player</button>
 
-            {/* Quantity counter with free indicator */}
             <div style={{
               padding: '10px 14px',
-              background: quantity >= 16 ? 'var(--green-bg)' : 'var(--amber-bg)',
+              background: quantity >= 16 ? 'var(--green-bg)' : 'var(--accent2)',
               borderRadius: '8px',
               fontSize: '12px',
-              color: quantity >= 16 ? 'var(--green)' : 'var(--amber)',
+              color: quantity >= 16 ? 'var(--green)' : 'var(--navy)',
               fontWeight: 600,
               marginBottom: '20px'
             }}>
               {quantity >= 16
-                ? `✅ Great! ${quantity} items qualify for ${freeItems} free jersey(s)!`
-                : `⚠️ Add ${16 - quantity} more item(s) to get 1 FREE jersey`}
+                ? `✅ ${quantity} items qualify for ${freeItems} free jersey(s)!`
+                : `📋 ${quantity} item(s) in this order (16+ items get 1 free per 16)`}
             </div>
 
             <div style={{ display: 'flex', gap: '10px' }}>
@@ -294,93 +349,137 @@ const CustomerOrderForm = () => {
           </div>
         )}
 
-        {/* ========== STEP 3: REVIEW & SUBMIT ========== */}
+        {/* STEP 3: REVIEW & SUBMIT */}
         {activeTab === 3 && (
           <div>
-            <h3 className="bebas" style={{ fontSize: '24px', marginBottom: '1.5rem' }}>3. Review & Submit</h3>
+            <h3 className="bebas" style={{ fontSize: '24px', marginBottom: '1.5rem' }}>3. Review & Confirm</h3>
 
-            {/* Order Summary */}
+            {uploadProgress && (
+              <div style={{
+                padding: '10px 14px',
+                background: 'var(--accent2)',
+                borderRadius: '8px',
+                marginBottom: '16px',
+                fontSize: '13px',
+                color: 'var(--navy)'
+              }}>
+                ⏳ {uploadProgress}
+              </div>
+            )}
+
             <div style={{ background: 'var(--off)', padding: '20px', borderRadius: '12px', marginBottom: '20px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                <span style={{ color: 'var(--muted)' }}>Customer:</span>
+                <span style={{ fontWeight: 600 }}>{userData?.fullName}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
                 <span style={{ color: 'var(--muted)' }}>Jersey Type:</span>
-                <span style={{ fontWeight: 700 }}>{selectedJersey?.label}</span>
+                <span style={{ fontWeight: 600 }}>{selectedJersey?.label}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
                 <span style={{ color: 'var(--muted)' }}>Price per item:</span>
-                <span style={{ fontWeight: 700 }}>₱{basePrice.toLocaleString()}</span>
+                <span>₱{basePrice.toLocaleString()}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-                <span style={{ color: 'var(--muted)' }}>Total Quantity:</span>
-                <span style={{ fontWeight: 700 }}>{quantity} items</span>
+                <span style={{ color: 'var(--muted)' }}>Total Items:</span>
+                <span style={{ fontWeight: 600 }}>{quantity}</span>
               </div>
               {freeItems > 0 && (
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
                   <span style={{ color: 'var(--muted)' }}>Free Items:</span>
-                  <span style={{ fontWeight: 700, color: 'var(--green)' }}>{freeItems} FREE 🎁</span>
+                  <span style={{ fontWeight: 600, color: 'var(--green)' }}>{freeItems} FREE 🎁</span>
                 </div>
               )}
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-                <span style={{ color: 'var(--muted)' }}>Paid Items:</span>
-                <span style={{ fontWeight: 700 }}>{paidItems} × ₱{basePrice.toLocaleString()}</span>
+                <span style={{ color: 'var(--muted)' }}>Design:</span>
+                <span>{formData.designImage ? '✅ Uploaded' : 'No design uploaded'}</span>
               </div>
               <hr style={{ border: 'none', borderTop: '2px solid var(--border)', margin: '12px 0' }} />
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: 'var(--text)', fontWeight: 600 }}>Total Amount:</span>
+                <span style={{ fontWeight: 600 }}>Total Amount:</span>
                 <span style={{
                   fontFamily: 'Bebas Neue, sans-serif',
                   color: 'var(--navy)',
                   fontWeight: 800,
-                  fontSize: '24px',
-                  letterSpacing: '0.03em'
+                  fontSize: '24px'
                 }}>
                   ₱{totalAmount.toLocaleString()}
                 </span>
               </div>
             </div>
 
-            {/* Production Timeline Notice */}
-            <div style={{
-              padding: '14px 16px',
-              background: '#fff9e5',
-              border: '1px solid rgba(250, 204, 21, 0.3)',
-              borderLeft: '4px solid var(--yellow)',
-              borderRadius: '0 8px 8px 0',
-              marginBottom: '20px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '10px'
-            }}>
-              <span style={{ fontSize: '20px' }}>⏱️</span>
+            {/* Success with QR Code */}
+            {message.type === 'success' && lastOrder ? (
               <div>
-                <div style={{ fontWeight: 600, fontSize: '13px', color: 'var(--text)' }}>
-                  Production Timeline
+                <div style={{
+                  padding: '12px 16px',
+                  background: 'var(--green-bg)',
+                  color: 'var(--green)',
+                  borderRadius: '8px',
+                  fontSize: '13px',
+                  fontWeight: 500,
+                  marginBottom: '16px'
+                }}>
+                  {message.text}
                 </div>
-                <div style={{ fontSize: '12px', color: 'var(--muted)' }}>
-                  Your order will be ready <strong>1 week after production is complete</strong>
+                
+                <div style={{ 
+                  textAlign: 'center',
+                  padding: '20px',
+                  background: 'white',
+                  borderRadius: '12px',
+                  border: '1px solid var(--border)',
+                  marginBottom: '16px'
+                }}>
+                  <p style={{ fontWeight: 600, marginBottom: '10px', color: 'var(--navy)' }}>
+                    Scan to track your order:
+                  </p>
+                  <QRCodeSVG 
+                    value={`${window.location.origin}/track/${lastOrder.orderId}`}
+                    size={150}
+                  />
+                  <p style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '10px' }}>
+                    Order ID: {lastOrder.orderId.slice(-6)}
+                  </p>
                 </div>
-              </div>
-            </div>
 
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <button className="btn-secondary" onClick={() => setActiveTab(2)}>← Back</button>
-              <button className="btn-yellow" onClick={handleSubmit} disabled={isSubmitting}>
-                {isSubmitting ? 'Submitting...' : '✅ Confirm Order'}
-              </button>
-            </div>
-
-            {message.text && (
-              <div style={{
-                marginTop: '15px',
-                padding: '12px 16px',
-                background: message.type === 'success' ? 'var(--green-bg)' : 'var(--red-bg)',
-                color: message.type === 'success' ? 'var(--green)' : 'var(--red)',
-                borderRadius: '8px',
-                fontSize: '13px',
-                fontWeight: 500,
-                border: `1px solid ${message.type === 'success' ? 'rgba(22, 163, 74, 0.2)' : 'rgba(220, 38, 38, 0.2)'}`
-              }}>
-                {message.text}
+                <button 
+                  className="btn-yellow" 
+                  onClick={resetForm}
+                  style={{ width: '100%' }}
+                >
+                  Place Another Order →
+                </button>
               </div>
+            ) : (
+              <>
+                {message.type === 'error' && message.text && (
+                  <div style={{
+                    marginTop: '15px',
+                    padding: '12px 16px',
+                    background: 'var(--red-bg)',
+                    color: 'var(--red)',
+                    borderRadius: '8px',
+                    fontSize: '13px',
+                    fontWeight: 500,
+                    marginBottom: '16px'
+                  }}>
+                    {message.text}
+                  </div>
+                )}
+                
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button className="btn-secondary" onClick={() => setActiveTab(2)}>← Back</button>
+                  <button 
+                    type="button"
+                    className="btn-yellow" 
+                    onClick={handleSubmit} 
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? 'Submitting...' : '✅ Confirm Order'}
+                  </button>
+                </div>
+              </>
             )}
           </div>
         )}

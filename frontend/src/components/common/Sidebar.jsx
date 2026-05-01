@@ -1,27 +1,51 @@
 import React from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
+import { logoutUser } from '../../services/authService';
 
-const Sidebar = ({ user, currentView, setCurrentView, onLogout }) => {
+const Sidebar = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { userData } = useAuth();
+
+  const handleLogout = async () => {
+    await logoutUser();
+    navigate('/login');
+  };
+
+  const isActive = (path) => location.pathname === path;
+
+  // Customer navigation
   const customerLinks = [
-    { id: 'dashboard', label: 'My Orders', icon: '📦' },
-    { id: 'new-order', label: 'New Order', icon: '➕' },
-    { id: 'profile', label: 'Account Settings', icon: '👤' },
+    { path: '/customer/dashboard', label: 'My Orders', icon: '📦' },
+    { path: '/customer/new-order', label: 'New Order', icon: '➕' },
+    { path: '/customer/orders', label: 'Order History', icon: '📋' },
+    { path: '/customer/profile', label: 'Account Settings', icon: '👤' },
   ];
 
+  // Staff navigation
   const staffLinks = [
-    { id: 'dashboard', label: 'Order Queue', icon: '📋' },
-    { id: 'walk-in', label: 'Walk-in Order', icon: '🚶' },
-    { id: 'profile', label: 'Account Settings', icon: '👤' },
+    { path: '/staff/queue', label: 'Order Queue', icon: '📋' },
+    { path: '/staff/walk-in', label: 'Walk-in Order', icon: '🚶' },
+    { path: '/staff/profile', label: 'Account Settings', icon: '👤' },
   ];
 
+  // Owner navigation
   const ownerLinks = [
-    { id: 'dashboard', label: 'Insights', icon: '📊' },
-    { id: 'staff-mgmt', label: 'Staff Management', icon: '👥' },
-    { id: 'all-orders', label: 'All Orders', icon: '📋' },
-    { id: 'reports', label: 'Reports', icon: '📝' },
-    { id: 'profile', label: 'Account Settings', icon: '👤' },
+    { path: '/owner/dashboard', label: 'Insights', icon: '📊' },
+    { path: '/owner/all-orders', label: 'All Orders', icon: '📋' },
+    { path: '/owner/staff-management', label: 'Staff Management', icon: '👥' },
+    { path: '/owner/reports', label: 'Reports', icon: '📝' },
+    { path: '/owner/profile', label: 'Account Settings', icon: '👤' },
   ];
 
-  const links = user.role === 'Owner' ? ownerLinks : user.role === 'Staff' ? staffLinks : customerLinks;
+  const links = userData?.role === 'owner' ? ownerLinks 
+    : userData?.role === 'staff' ? staffLinks 
+    : customerLinks;
+
+  if (!userData) {
+    return null; // Don't render sidebar if no user data
+  }
 
   return (
     <aside className="sidebar">
@@ -33,9 +57,9 @@ const Sidebar = ({ user, currentView, setCurrentView, onLogout }) => {
       <div className="nav-links">
         {links.map((link) => (
           <div
-            key={link.id}
-            className={`nav-link ${currentView === link.id ? 'active' : ''}`}
-            onClick={() => setCurrentView(link.id)}
+            key={link.path}
+            className={`nav-link ${isActive(link.path) ? 'active' : ''}`}
+            onClick={() => navigate(link.path)}
           >
             <span style={{ marginRight: '10px' }}>{link.icon}</span>
             {link.label}
@@ -45,9 +69,9 @@ const Sidebar = ({ user, currentView, setCurrentView, onLogout }) => {
 
       <div className="sidebar-footer">
         <div style={{ marginBottom: '1rem', fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>
-          Logged in as <strong style={{ color: 'white' }}>{user.role}</strong>
+          Logged in as <strong style={{ color: 'white', textTransform: 'capitalize' }}>{userData?.role}</strong>
         </div>
-        <button className="btn-navy" style={{ width: '100%', background: 'rgba(255,255,255,0.1)' }} onClick={onLogout}>
+        <button className="btn-navy" style={{ width: '100%', background: 'rgba(255,255,255,0.1)' }} onClick={handleLogout}>
           Logout
         </button>
       </div>

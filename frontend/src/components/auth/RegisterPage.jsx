@@ -1,26 +1,63 @@
 import React, { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { registerCustomer } from '../../services/authService';
+import { useAuth } from '../../contexts/AuthContext';
 import logo from '../../assets/logo.png';
 
-const RegisterPage = ({ onRegister, onBackToLogin }) => {
+const RegisterPage = () => {
+  const navigate = useNavigate();
+  const { setUserData } = useAuth();
   const [formData, setFormData] = useState({
-    name: '',
+    fullName: '',
     email: '',
-    phone: '',
+    contactNumber: '',
     password: '',
     confirmPassword: ''
   });
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (formData.password !== formData.confirmPassword) {
-      alert("Passwords do not match!");
-      return;
-    }
-    onRegister({ name: formData.name, role: 'Customer' });
-  };
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match!');
+      return;
+    }
+
+    if (formData.password.length < 6) {
+      setError('Password must be at least 6 characters');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const result = await registerCustomer(
+        formData.fullName,
+        formData.contactNumber,
+        formData.email,
+        formData.password
+      );
+
+      if (result.success) {
+        // Update context immediately
+        setUserData(result.userData);
+        // Redirect to customer dashboard
+        navigate('/customer/dashboard');
+      } else {
+        setLoading(false);
+        setError(result.error || 'Registration failed');
+      }
+    } catch (err) {
+      setLoading(false);
+      setError(err.message || 'An error occurred during registration');
+    }
   };
 
   return (
@@ -33,7 +70,6 @@ const RegisterPage = ({ onRegister, onBackToLogin }) => {
       alignItems: 'center',
       justifyContent: 'center'
     }}>
-      {/* Background Mesh Texture */}
       <div style={{
         position: 'absolute',
         inset: 0,
@@ -54,7 +90,6 @@ const RegisterPage = ({ onRegister, onBackToLogin }) => {
         zIndex: 2,
         boxShadow: '0 50px 100px -20px rgba(0,0,0,0.5)'
       }}>
-        {/* Logo Section */}
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem' }}>
           <img src={logo} alt="Sampings Logo" style={{ height: '60px', width: 'auto' }} />
         </div>
@@ -62,107 +97,144 @@ const RegisterPage = ({ onRegister, onBackToLogin }) => {
         <div className="bebas" style={{ fontSize: '32px', color: 'white', textAlign: 'center', letterSpacing: '0.03em', marginBottom: '4px' }}>Create Account</div>
         <p style={{ textAlign: 'center', color: 'rgba(255, 255, 255, 0.6)', fontSize: '14px', marginBottom: '2rem' }}>Join Sampings to place and track orders</p>
 
-        <form onSubmit={handleSubmit}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
-            <div className="form-group">
-              <label className="form-label" style={{ color: 'rgba(255, 255, 255, 0.8)' }}>Full Name</label>
-              <input
-                className="form-input"
-                name="name"
-                onChange={handleChange}
-                placeholder="Juan dela Cruz"
-                style={{
-                  width: '100%',
-                  background: 'rgba(255, 255, 255, 0.1)',
-                  color: 'white',
-                  border: '1px solid rgba(255, 255, 255, 0.2)'
-                }}
-                required
-              />
-            </div>
-            <div className="form-group">
-              <label className="form-label" style={{ color: 'rgba(255, 255, 255, 0.8)' }}>Contact Number</label>
-              <input
-                className="form-input"
-                name="phone"
-                onChange={handleChange}
-                placeholder="+63 9XX"
-                style={{
-                  width: '100%',
-                  background: 'rgba(255, 255, 255, 0.1)',
-                  color: 'white',
-                  border: '1px solid rgba(255, 255, 255, 0.2)'
-                }}
-                required
-              />
-            </div>
+        {error && (
+          <div style={{
+            background: 'rgba(255, 71, 87, 0.2)',
+            border: '1px solid rgba(255, 71, 87, 0.4)',
+            color: '#ff4757',
+            padding: '12px',
+            borderRadius: '8px',
+            marginBottom: '16px',
+            fontSize: '14px',
+            textAlign: 'center'
+          }}>
+            {error}
           </div>
-          <div className="form-group" style={{ marginBottom: '12px' }}>
+        )}
+
+        <form onSubmit={handleSubmit}>
+          <div className="form-group" style={{ marginBottom: '16px' }}>
+            <label className="form-label" style={{ color: 'rgba(255, 255, 255, 0.8)' }}>Full Name</label>
+            <input
+              className="form-input"
+              type="text"
+              name="fullName"
+              value={formData.fullName}
+              onChange={handleChange}
+              placeholder="John Doe"
+              style={{
+                width: '100%',
+                background: 'rgba(255, 255, 255, 0.1)',
+                color: 'white',
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+                padding: '10px 12px',
+                borderRadius: '6px',
+                fontSize: '14px'
+              }}
+              required
+            />
+          </div>
+
+          <div className="form-group" style={{ marginBottom: '16px' }}>
             <label className="form-label" style={{ color: 'rgba(255, 255, 255, 0.8)' }}>Email Address</label>
             <input
               className="form-input"
-              name="email"
               type="email"
+              name="email"
+              value={formData.email}
               onChange={handleChange}
               placeholder="you@email.com"
               style={{
                 width: '100%',
                 background: 'rgba(255, 255, 255, 0.1)',
                 color: 'white',
-                border: '1px solid rgba(255, 255, 255, 0.2)'
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+                padding: '10px 12px',
+                borderRadius: '6px',
+                fontSize: '14px'
               }}
               required
             />
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '20px' }}>
-            <div className="form-group">
-              <label className="form-label" style={{ color: 'rgba(255, 255, 255, 0.8)' }}>Password</label>
-              <input
-                className="form-input"
-                name="password"
-                type="password"
-                onChange={handleChange}
-                placeholder="••••••••"
-                style={{
-                  width: '100%',
-                  background: 'rgba(255, 255, 255, 0.1)',
-                  color: 'white',
-                  border: '1px solid rgba(255, 255, 255, 0.2)'
-                }}
-                required
-              />
-            </div>
-            <div className="form-group">
-              <label className="form-label" style={{ color: 'rgba(255, 255, 255, 0.8)' }}>Confirm</label>
-              <input
-                className="form-input"
-                name="confirmPassword"
-                type="password"
-                onChange={handleChange}
-                placeholder="••••••••"
-                style={{
-                  width: '100%',
-                  background: 'rgba(255, 255, 255, 0.1)',
-                  color: 'white',
-                  border: '1px solid rgba(255, 255, 255, 0.2)'
-                }}
-                required
-              />
-            </div>
+
+          <div className="form-group" style={{ marginBottom: '16px' }}>
+            <label className="form-label" style={{ color: 'rgba(255, 255, 255, 0.8)' }}>Contact Number</label>
+            <input
+              className="form-input"
+              type="tel"
+              name="contactNumber"
+              value={formData.contactNumber}
+              onChange={handleChange}
+              placeholder="+1 (555) 123-4567"
+              style={{
+                width: '100%',
+                background: 'rgba(255, 255, 255, 0.1)',
+                color: 'white',
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+                padding: '10px 12px',
+                borderRadius: '6px',
+                fontSize: '14px'
+              }}
+              required
+            />
           </div>
-          <button type="submit" className="btn-primary" style={{
-            width: '100%',
-            padding: '12px',
-            background: 'var(--yellow)',
-            color: 'var(--navy-ultra)',
-            border: 'none',
-            fontWeight: '700',
-            cursor: 'pointer'
-          }}>Create Account →</button>
+
+          <div className="form-group" style={{ marginBottom: '16px' }}>
+            <label className="form-label" style={{ color: 'rgba(255, 255, 255, 0.8)' }}>Password</label>
+            <input
+              className="form-input"
+              type="password"
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
+              placeholder="••••••••"
+              style={{
+                width: '100%',
+                background: 'rgba(255, 255, 255, 0.1)',
+                color: 'white',
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+                padding: '10px 12px',
+                borderRadius: '6px',
+                fontSize: '14px'
+              }}
+              required
+            />
+          </div>
+
+          <div className="form-group" style={{ marginBottom: '20px' }}>
+            <label className="form-label" style={{ color: 'rgba(255, 255, 255, 0.8)' }}>Confirm Password</label>
+            <input
+              className="form-input"
+              type="password"
+              name="confirmPassword"
+              value={formData.confirmPassword}
+              onChange={handleChange}
+              placeholder="••••••••"
+              style={{
+                width: '100%',
+                background: 'rgba(255, 255, 255, 0.1)',
+                color: 'white',
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+                padding: '10px 12px',
+                borderRadius: '6px',
+                fontSize: '14px'
+              }}
+              required
+            />
+          </div>
+
+          <button
+            type="submit"
+            className="btn-yellow"
+            style={{ width: '100%', padding: '12px', borderRadius: '8px', border: 'none', fontWeight: '700', cursor: 'pointer', fontSize: '16px' }}
+            disabled={loading}
+          >
+            {loading ? 'Creating Account...' : 'Create Account →'}
+          </button>
         </form>
 
         <p style={{ textAlign: 'center', marginTop: '1.5rem', fontSize: '13px', color: 'rgba(255, 255, 255, 0.6)' }}>
-          Already have an account? <a href="#" onClick={(e) => { e.preventDefault(); onBackToLogin(); }} style={{ color: 'var(--yellow)', fontWeight: '600', textDecoration: 'none' }}>Sign in</a>
+          Already have an account? <Link to="/login" style={{ color: 'var(--yellow)', fontWeight: '600', textDecoration: 'none' }}>Sign in here</Link>
         </p>
       </div>
     </div>
