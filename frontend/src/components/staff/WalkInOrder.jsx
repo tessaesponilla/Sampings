@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { QRCodeSVG } from 'qrcode.react';
 import { createOrder, uploadDesignImage } from '../../services/orderService';
 
 const WalkInOrder = () => {
@@ -18,6 +19,7 @@ const WalkInOrder = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
   const [uploadProgress, setUploadProgress] = useState('');
+  const [lastOrder, setLastOrder] = useState(null);
   const fileInputRef = useRef(null);
 
   const jerseyOptions = [
@@ -74,33 +76,45 @@ const WalkInOrder = () => {
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setFormData(prev => ({ 
-          ...prev, 
+        setFormData(prev => ({
+          ...prev,
           designImage: reader.result,
-          designImageFile: file 
+          designImageFile: file
         }));
       };
       reader.readAsDataURL(file);
     }
   };
 
+  const resetForm = () => {
+    setFormData({
+      customerName: '',
+      customerContact: '',
+      customerEmail: '',
+      jerseyStyle: '',
+      designImage: null,
+      designImageFile: null,
+      items: [{ size: '', number: '', surname: '' }],
+    });
+    setActiveTab(1);
+    setMessage({ type: '', text: '' });
+    setLastOrder(null);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     console.log('WALK-IN SUBMIT TRIGGERED');
 
-    // Validate customer info
     if (!formData.customerName || !formData.customerContact) {
       setMessage({ type: 'error', text: 'Please enter customer name and contact number.' });
       return;
     }
 
-    // Check jersey selected
     if (!formData.jerseyStyle) {
       setMessage({ type: 'error', text: 'Please select a jersey type.' });
       return;
     }
 
-    // Check all item details filled
     const hasEmpty = formData.items.some(item => !item.size || !item.number || !item.surname);
     if (hasEmpty) {
       setMessage({ type: 'error', text: 'Please fill in all size, number, and surname fields.' });
@@ -136,23 +150,11 @@ const WalkInOrder = () => {
       });
 
       if (orderResult.success) {
+        setLastOrder(orderResult);
         setMessage({
           type: 'success',
           text: `Walk-in order #${orderResult.orderId.slice(-6)} created! Total: ₱${orderResult.totalAmount.toLocaleString()}. Processed by: ${userData?.fullName}`
         });
-        setTimeout(() => {
-          setFormData({
-            customerName: '',
-            customerContact: '',
-            customerEmail: '',
-            jerseyStyle: '',
-            designImage: null,
-            designImageFile: null,
-            items: [{ size: '', number: '', surname: '' }],
-          });
-          setActiveTab(1);
-          setMessage({ type: '', text: '' });
-        }, 3000);
       } else {
         setMessage({ type: 'error', text: 'Failed to create order: ' + orderResult.error });
       }
@@ -184,7 +186,7 @@ const WalkInOrder = () => {
         {activeTab === 1 && (
           <div>
             <h3 className="bebas" style={{ fontSize: '24px', marginBottom: '1.5rem' }}>1. Customer & Jersey Type</h3>
-            
+
             <div style={{ marginBottom: '16px' }}>
               <p style={{ color: 'var(--muted)', fontSize: '14px' }}>
                 Walk-in order processed by: <strong>{userData?.fullName}</strong>
@@ -194,39 +196,15 @@ const WalkInOrder = () => {
             <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
               <div className="form-group">
                 <label className="form-label">Customer Full Name *</label>
-                <input 
-                  className="form-input" 
-                  name="customerName" 
-                  value={formData.customerName} 
-                  onChange={handleInputChange} 
-                  placeholder="Juan dela Cruz" 
-                  style={{ width: '100%' }} 
-                  required
-                />
+                <input className="form-input" name="customerName" value={formData.customerName} onChange={handleInputChange} placeholder="Juan dela Cruz" style={{ width: '100%' }} required />
               </div>
               <div className="form-group">
                 <label className="form-label">Contact Number *</label>
-                <input 
-                  className="form-input" 
-                  name="customerContact" 
-                  value={formData.customerContact} 
-                  onChange={handleInputChange} 
-                  placeholder="+63 912 345 6789" 
-                  style={{ width: '100%' }} 
-                  required
-                />
+                <input className="form-input" name="customerContact" value={formData.customerContact} onChange={handleInputChange} placeholder="+63 912 345 6789" style={{ width: '100%' }} required />
               </div>
               <div className="form-group" style={{ gridColumn: 'span 2' }}>
                 <label className="form-label">Email (Optional)</label>
-                <input 
-                  className="form-input" 
-                  name="customerEmail" 
-                  type="email"
-                  value={formData.customerEmail} 
-                  onChange={handleInputChange} 
-                  placeholder="customer@email.com" 
-                  style={{ width: '100%' }} 
-                />
+                <input className="form-input" name="customerEmail" type="email" value={formData.customerEmail} onChange={handleInputChange} placeholder="customer@email.com" style={{ width: '100%' }} />
               </div>
 
               <div className="form-group" style={{ gridColumn: 'span 2' }}>
@@ -237,49 +215,18 @@ const WalkInOrder = () => {
                       key={j.value}
                       onClick={() => setFormData(prev => ({ ...prev, jerseyStyle: j.value }))}
                       style={{
-                        padding: '18px',
-                        borderRadius: '12px',
-                        cursor: 'pointer',
+                        padding: '18px', borderRadius: '12px', cursor: 'pointer',
                         border: `2px solid ${formData.jerseyStyle === j.value ? 'var(--navy)' : 'var(--border2)'}`,
                         background: formData.jerseyStyle === j.value ? 'var(--accent2)' : 'var(--white)',
-                        transition: 'all 0.2s ease',
-                        position: 'relative'
+                        transition: 'all 0.2s ease', position: 'relative'
                       }}
                     >
                       <div style={{ fontSize: '28px', marginBottom: '8px' }}>{j.icon}</div>
-                      <div style={{ fontWeight: 700, fontSize: '15px', color: 'var(--text)', marginBottom: '4px' }}>
-                        {j.label}
-                      </div>
-                      <div style={{ fontSize: '12px', color: 'var(--muted)', marginBottom: '8px' }}>
-                        {j.description}
-                      </div>
-                      <div style={{
-                        fontFamily: 'Bebas Neue, sans-serif',
-                        fontSize: '22px',
-                        color: 'var(--navy)',
-                        letterSpacing: '0.03em',
-                        fontWeight: 700
-                      }}>
-                        ₱{j.price.toLocaleString()}
-                      </div>
+                      <div style={{ fontWeight: 700, fontSize: '15px', color: 'var(--text)', marginBottom: '4px' }}>{j.label}</div>
+                      <div style={{ fontSize: '12px', color: 'var(--muted)', marginBottom: '8px' }}>{j.description}</div>
+                      <div style={{ fontFamily: 'Bebas Neue, sans-serif', fontSize: '22px', color: 'var(--navy)', letterSpacing: '0.03em', fontWeight: 700 }}>₱{j.price.toLocaleString()}</div>
                       {formData.jerseyStyle === j.value && (
-                        <div style={{
-                          position: 'absolute',
-                          top: '12px',
-                          right: '12px',
-                          background: 'var(--navy)',
-                          color: '#fff',
-                          width: '24px',
-                          height: '24px',
-                          borderRadius: '50%',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontSize: '14px',
-                          fontWeight: 700
-                        }}>
-                          ✓
-                        </div>
+                        <div style={{ position: 'absolute', top: '12px', right: '12px', background: 'var(--navy)', color: '#fff', width: '24px', height: '24px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 700 }}>✓</div>
                       )}
                     </div>
                   ))}
@@ -287,12 +234,7 @@ const WalkInOrder = () => {
               </div>
             </div>
 
-            <button
-              className="btn-yellow"
-              style={{ marginTop: '20px' }}
-              onClick={() => setActiveTab(2)}
-              disabled={!formData.jerseyStyle || !formData.customerName || !formData.customerContact}
-            >
+            <button className="btn-yellow" style={{ marginTop: '20px' }} onClick={() => setActiveTab(2)} disabled={!formData.jerseyStyle || !formData.customerName || !formData.customerContact}>
               Continue to Design & Sizes →
             </button>
           </div>
@@ -305,13 +247,7 @@ const WalkInOrder = () => {
 
             <div style={{ marginBottom: '20px' }}>
               <label className="form-label">Upload Design Reference (Optional)</label>
-              <div
-                onClick={() => fileInputRef.current.click()}
-                style={{
-                  border: '2px dashed var(--border2)', padding: '20px', borderRadius: '12px',
-                  textAlign: 'center', cursor: 'pointer', background: 'var(--off)'
-                }}
-              >
+              <div onClick={() => fileInputRef.current.click()} style={{ border: '2px dashed var(--border2)', padding: '20px', borderRadius: '12px', textAlign: 'center', cursor: 'pointer', background: 'var(--off)' }}>
                 {formData.designImage ? (
                   <img src={formData.designImage} alt="Preview" style={{ maxHeight: '150px', borderRadius: '8px' }} />
                 ) : (
@@ -320,22 +256,15 @@ const WalkInOrder = () => {
                 <input type="file" ref={fileInputRef} onChange={handleImageUpload} hidden accept="image/*" />
               </div>
               {formData.designImage && (
-                <button 
-                  onClick={() => setFormData(prev => ({ ...prev, designImage: null, designImageFile: null }))}
-                  style={{ marginTop: '8px', fontSize: '12px', color: 'red', background: 'none', border: 'none', cursor: 'pointer' }}
-                >
-                  Remove image
-                </button>
+                <button onClick={() => setFormData(prev => ({ ...prev, designImage: null, designImageFile: null }))} style={{ marginTop: '8px', fontSize: '12px', color: 'red', background: 'none', border: 'none', cursor: 'pointer' }}>Remove image</button>
               )}
             </div>
 
             <label className="form-label" style={{ marginBottom: '10px' }}>
               Player Details (Size, Number, Surname)
-              <span style={{ marginLeft: '8px', fontSize: '11px', color: 'var(--muted)', fontWeight: 400 }}>
-                ({quantity} items)
-              </span>
+              <span style={{ marginLeft: '8px', fontSize: '11px', color: 'var(--muted)', fontWeight: 400 }}>({quantity} items)</span>
             </label>
-            
+
             <div style={{ overflowX: 'auto', marginBottom: '15px' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
@@ -348,54 +277,18 @@ const WalkInOrder = () => {
                 </thead>
                 <tbody>
                   {formData.items.map((item, idx) => (
-                    <tr
-                      key={idx}
-                      style={{
-                        borderBottom: '1px solid var(--border)',
-                        background: quantity >= 16 && (idx + 1) % 16 === 0 ? 'var(--green-bg)' : 'transparent'
-                      }}
-                    >
+                    <tr key={idx} style={{ borderBottom: '1px solid var(--border)', background: quantity >= 16 && (idx + 1) % 16 === 0 ? 'var(--green-bg)' : 'transparent' }}>
                       <td style={{ padding: '8px' }}>
-                        <select 
-                          className="form-input" 
-                          value={item.size} 
-                          onChange={(e) => handleItemChange(idx, 'size', e.target.value)} 
-                          style={{ padding: '6px', fontSize: '12px' }}
-                        >
+                        <select className="form-input" value={item.size} onChange={(e) => handleItemChange(idx, 'size', e.target.value)} style={{ padding: '6px', fontSize: '12px' }}>
                           <option value="">—</option>
                           {['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL'].map(s => <option key={s} value={s}>{s}</option>)}
                         </select>
                       </td>
-                      <td style={{ padding: '8px' }}>
-                        <input 
-                          className="form-input" 
-                          value={item.number} 
-                          onChange={(e) => handleItemChange(idx, 'number', e.target.value)} 
-                          placeholder="00" 
-                          style={{ padding: '6px', width: '60px', fontSize: '12px' }} 
-                        />
-                      </td>
-                      <td style={{ padding: '8px' }}>
-                        <input 
-                          className="form-input" 
-                          value={item.surname} 
-                          onChange={(e) => handleItemChange(idx, 'surname', e.target.value)} 
-                          placeholder="Surname" 
-                          style={{ padding: '6px', width: '100%', fontSize: '12px' }} 
-                        />
-                      </td>
+                      <td style={{ padding: '8px' }}><input className="form-input" value={item.number} onChange={(e) => handleItemChange(idx, 'number', e.target.value)} placeholder="00" style={{ padding: '6px', width: '60px', fontSize: '12px' }} /></td>
+                      <td style={{ padding: '8px' }}><input className="form-input" value={item.surname} onChange={(e) => handleItemChange(idx, 'surname', e.target.value)} placeholder="Surname" style={{ padding: '6px', width: '100%', fontSize: '12px' }} /></td>
                       <td style={{ padding: '8px', textAlign: 'center' }}>
                         {quantity >= 16 && (idx + 1) % 16 === 0 ? (
-                          <span style={{
-                            background: 'var(--green)',
-                            color: '#fff',
-                            padding: '3px 8px',
-                            borderRadius: '10px',
-                            fontSize: '10px',
-                            fontWeight: 700
-                          }}>
-                            FREE
-                          </span>
+                          <span style={{ background: 'var(--green)', color: '#fff', padding: '3px 8px', borderRadius: '10px', fontSize: '10px', fontWeight: 700 }}>FREE</span>
                         ) : (
                           <button onClick={() => removeItemRow(idx)} style={{ color: 'red', background: 'none', border: 'none', cursor: 'pointer' }}>✕</button>
                         )}
@@ -405,23 +298,11 @@ const WalkInOrder = () => {
                 </tbody>
               </table>
             </div>
-            
-            <button onClick={addItemRow} style={{ background: 'var(--off)', color: 'var(--text)', border: '1px solid var(--border2)', padding: '8px 16px', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', marginBottom: '20px', fontWeight: 500 }}>
-              + Add Player
-            </button>
 
-            <div style={{
-              padding: '10px 14px',
-              background: quantity >= 16 ? 'var(--green-bg)' : 'var(--accent2)',
-              borderRadius: '8px',
-              fontSize: '12px',
-              color: quantity >= 16 ? 'var(--green)' : 'var(--navy)',
-              fontWeight: 600,
-              marginBottom: '20px'
-            }}>
-              {quantity >= 16
-                ? `✅ ${quantity} items qualify for ${freeItems} free jersey(s)!`
-                : `📋 ${quantity} item(s) in this order (16+ items get 1 free per 16)`}
+            <button onClick={addItemRow} style={{ background: 'var(--off)', color: 'var(--text)', border: '1px solid var(--border2)', padding: '8px 16px', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', marginBottom: '20px', fontWeight: 500 }}>+ Add Player</button>
+
+            <div style={{ padding: '10px 14px', background: quantity >= 16 ? 'var(--green-bg)' : 'var(--accent2)', borderRadius: '8px', fontSize: '12px', color: quantity >= 16 ? 'var(--green)' : 'var(--navy)', fontWeight: 600, marginBottom: '20px' }}>
+              {quantity >= 16 ? `✅ ${quantity} items qualify for ${freeItems} free jersey(s)!` : `📋 ${quantity} item(s) in this order (16+ items get 1 free per 16)`}
             </div>
 
             <div style={{ display: 'flex', gap: '10px' }}>
@@ -437,94 +318,44 @@ const WalkInOrder = () => {
             <h3 className="bebas" style={{ fontSize: '24px', marginBottom: '1.5rem' }}>3. Review & Confirm</h3>
 
             {uploadProgress && (
-              <div style={{
-                padding: '10px 14px',
-                background: 'var(--accent2)',
-                borderRadius: '8px',
-                marginBottom: '16px',
-                fontSize: '13px',
-                color: 'var(--navy)'
-              }}>
-                ⏳ {uploadProgress}
-              </div>
+              <div style={{ padding: '10px 14px', background: 'var(--accent2)', borderRadius: '8px', marginBottom: '16px', fontSize: '13px', color: 'var(--navy)' }}>⏳ {uploadProgress}</div>
             )}
 
             <div style={{ background: 'var(--off)', padding: '20px', borderRadius: '12px', marginBottom: '20px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-                <span style={{ color: 'var(--muted)' }}>Customer:</span>
-                <span style={{ fontWeight: 600 }}>{formData.customerName}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-                <span style={{ color: 'var(--muted)' }}>Contact:</span>
-                <span>{formData.customerContact}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-                <span style={{ color: 'var(--muted)' }}>Order Type:</span>
-                <span style={{ 
-                  background: 'var(--amber-bg)', 
-                  color: 'var(--amber)', 
-                  padding: '2px 10px', 
-                  borderRadius: '12px', 
-                  fontSize: '11px', 
-                  fontWeight: 700 
-                }}>WALK-IN</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-                <span style={{ color: 'var(--muted)' }}>Jersey Type:</span>
-                <span style={{ fontWeight: 600 }}>{selectedJersey?.label}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-                <span style={{ color: 'var(--muted)' }}>Price per item:</span>
-                <span>₱{basePrice.toLocaleString()}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-                <span style={{ color: 'var(--muted)' }}>Total Items:</span>
-                <span style={{ fontWeight: 600 }}>{quantity}</span>
-              </div>
-              {freeItems > 0 && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-                  <span style={{ color: 'var(--muted)' }}>Free Items:</span>
-                  <span style={{ fontWeight: 600, color: 'var(--green)' }}>{freeItems} FREE 🎁</span>
-                </div>
-              )}
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}><span style={{ color: 'var(--muted)' }}>Customer:</span><span style={{ fontWeight: 600 }}>{formData.customerName}</span></div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}><span style={{ color: 'var(--muted)' }}>Contact:</span><span>{formData.customerContact}</span></div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}><span style={{ color: 'var(--muted)' }}>Order Type:</span><span style={{ background: 'var(--amber-bg)', color: 'var(--amber)', padding: '2px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: 700 }}>WALK-IN</span></div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}><span style={{ color: 'var(--muted)' }}>Jersey Type:</span><span style={{ fontWeight: 600 }}>{selectedJersey?.label}</span></div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}><span style={{ color: 'var(--muted)' }}>Price per item:</span><span>₱{basePrice.toLocaleString()}</span></div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}><span style={{ color: 'var(--muted)' }}>Total Items:</span><span style={{ fontWeight: 600 }}>{quantity}</span></div>
+              {freeItems > 0 && <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}><span style={{ color: 'var(--muted)' }}>Free Items:</span><span style={{ fontWeight: 600, color: 'var(--green)' }}>{freeItems} FREE 🎁</span></div>}
               <hr style={{ border: 'none', borderTop: '2px solid var(--border)', margin: '12px 0' }} />
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ fontWeight: 600 }}>Total Amount:</span>
-                <span style={{
-                  fontFamily: 'Bebas Neue, sans-serif',
-                  color: 'var(--navy)',
-                  fontWeight: 800,
-                  fontSize: '24px'
-                }}>
-                  ₱{totalAmount.toLocaleString()}
-                </span>
-              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ fontWeight: 600 }}>Total Amount:</span><span style={{ fontFamily: 'Bebas Neue, sans-serif', color: 'var(--navy)', fontWeight: 800, fontSize: '24px' }}>₱{totalAmount.toLocaleString()}</span></div>
             </div>
 
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <button className="btn-secondary" onClick={() => setActiveTab(2)}>← Back</button>
-              <button 
-                type="button"
-                className="btn-yellow" 
-                onClick={handleSubmit} 
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? 'Processing...' : '✅ Confirm Walk-in Order'}
-              </button>
-            </div>
+            {/* SUCCESS WITH QR CODE */}
+            {message.type === 'success' && lastOrder ? (
+              <div>
+                <div style={{ padding: '12px 16px', background: 'var(--green-bg)', color: 'var(--green)', borderRadius: '8px', fontSize: '13px', fontWeight: 500, marginBottom: '16px' }}>{message.text}</div>
 
-            {message.text && (
-              <div style={{
-                marginTop: '15px',
-                padding: '12px 16px',
-                background: message.type === 'success' ? 'var(--green-bg)' : 'var(--red-bg)',
-                color: message.type === 'success' ? 'var(--green)' : 'var(--red)',
-                borderRadius: '8px',
-                fontSize: '13px',
-                fontWeight: 500
-              }}>
-                {message.text}
+                <div style={{ textAlign: 'center', padding: '20px', background: 'white', borderRadius: '12px', border: '1px solid var(--border)', marginBottom: '16px' }}>
+                  <p style={{ fontWeight: 600, marginBottom: '10px', color: 'var(--navy)' }}>Customer can scan to track order:</p>
+                  <QRCodeSVG value={`https://sampings-8e8d3.web.app/track/${lastOrder.orderNumber || lastOrder.orderId}`} size={150} />
+                  <p style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '10px' }}>Order ID: {lastOrder.orderId.slice(-6)}</p>
+                </div>
+
+                <button className="btn-yellow" onClick={resetForm} style={{ width: '100%' }}>Create Another Order →</button>
               </div>
+            ) : (
+              <>
+                {message.type === 'error' && message.text && (
+                  <div style={{ marginTop: '15px', padding: '12px 16px', background: 'var(--red-bg)', color: 'var(--red)', borderRadius: '8px', fontSize: '13px', fontWeight: 500, marginBottom: '16px' }}>{message.text}</div>
+                )}
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button className="btn-secondary" onClick={() => setActiveTab(2)}>← Back</button>
+                  <button type="button" className="btn-yellow" onClick={handleSubmit} disabled={isSubmitting}>{isSubmitting ? 'Processing...' : '✅ Confirm Walk-in Order'}</button>
+                </div>
+              </>
             )}
           </div>
         )}

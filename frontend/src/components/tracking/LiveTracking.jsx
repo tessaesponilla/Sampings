@@ -10,39 +10,46 @@ const LiveTracking = () => {
   const [error, setError] = useState('');
 
   const searchOrder = async (e) => {
-    e?.preventDefault();
-    if (!searchOrderId.trim()) return;
-    
-    setLoading(true);
-    setError('');
-    setOrder(null);
+      e?.preventDefault();
+      if (!searchOrderId.trim()) return;
 
-    // First try orderNumber, then try document ID
-    const { db } = await import('../../config/firebase');
-    const { collection, query, where, getDocs, getDoc, doc } = await import('firebase/firestore');
-    
-    let result;
-    
-    // Try by orderNumber first
-    const q = query(collection(db, 'orders'), where('orderNumber', '==', searchOrderId.trim()));
-    const snapshot = await getDocs(q);
-    
-    if (!snapshot.empty) {
-      const orderDoc = snapshot.docs[0];
-      result = await getOrderDetails(orderDoc.id);
-    } else {
-      // Try by document ID
-      result = await getOrderDetails(searchOrderId.trim());
-    }
+      setLoading(true);
+      setError('');
+      setOrder(null);
 
-    if (result?.success) {
-      setOrder(result.order);
-    } else {
-      setError('Order not found. Please check the order number.');
-    }
-    
-    setLoading(false);
-  };
+      const searchTerm = searchOrderId.trim();
+
+      // If it looks like a Firestore ID (long, no ORD- prefix), try direct lookup
+      if (!searchTerm.startsWith('ORD-')) {
+        const result = await getOrderDetails(searchTerm);
+        if (result?.success) {
+          setOrder(result.order);
+          setLoading(false);
+          return;
+        }
+      }
+
+      // Try by orderNumber
+      const { db } = await import('../../config/firebase');
+      const { collection, query, where, getDocs } = await import('firebase/firestore');
+
+      const q = query(collection(db, 'orders'), where('orderNumber', '==', searchTerm));
+      const snapshot = await getDocs(q);
+
+      if (!snapshot.empty) {
+        const orderDoc = snapshot.docs[0];
+        const result = await getOrderDetails(orderDoc.id);
+        if (result?.success) {
+          setOrder(result.order);
+        } else {
+          setError('Error loading order details.');
+        }
+      } else {
+        setError('Order not found. Please check the order number.');
+      }
+
+      setLoading(false);
+    };
 
   // Auto-search if orderId from URL
   React.useEffect(() => {
