@@ -14,6 +14,10 @@ export const createOrder = async (orderData) => {
     const userId = auth.currentUser?.uid;
 
     let customerId, customerName, customerContact, customerEmail, orderType;
+    let processedBy = null;
+    let processedByName = null;
+    let initialStatus = 'pending';
+    let historyNote = 'Order created';
 
     if (orderData.orderType === 'online') {
       const userDoc = await getDoc(doc(db, 'users', userId));
@@ -24,47 +28,55 @@ export const createOrder = async (orderData) => {
       customerEmail = userData.email;
       orderType = 'online';
     } else {
+      // Walk-in: processed by the staff who created it
+      const staffDoc = await getDoc(doc(db, 'users', userId));
+      const staffData = staffDoc.data();
       customerId = 'walk-in';
       customerName = orderData.customerName;
       customerContact = orderData.customerContact;
       customerEmail = orderData.customerEmail || '';
       orderType = 'walk-in';
+      processedBy = userId;
+      processedByName = staffData?.fullName || 'Staff';
+      initialStatus = 'confirmed';
+      historyNote = 'Walk-in order created and confirmed by staff';
     }
 
-   const orderRef = doc(collection(db, 'orders'));
+    const orderRef = doc(collection(db, 'orders'));
 
-// Generate sequential order number
-const counterRef = doc(db, 'counters', 'orderNumber');
-const counterDoc = await getDoc(counterRef);
-let nextNumber = 1;
-if (counterDoc.exists()) {
-  nextNumber = (counterDoc.data().current || 0) + 1;
-  batch.update(counterRef, { current: nextNumber });
-} else {
-  batch.set(counterRef, { current: 1 });
-}
-const orderNumber = `ORD-${String(nextNumber).padStart(4, '0')}`;
+    // Generate sequential order number
+    const counterRef = doc(db, 'counters', 'orderNumber');
+    const counterDoc = await getDoc(counterRef);
+    let nextNumber = 1;
+    if (counterDoc.exists()) {
+      nextNumber = (counterDoc.data().current || 0) + 1;
+      batch.update(counterRef, { current: nextNumber });
+    } else {
+      batch.set(counterRef, { current: 1 });
+    }
+    const orderNumber = `ORD-${String(nextNumber).padStart(4, '0')}`;
     
-batch.set(orderRef, {
-  orderId: orderRef.id,
-  orderNumber: orderNumber,  // ORD-0001, ORD-0002, etc.
-  userId: customerId,
-  customerName,
-  customerContact,
-  customerEmail,
-  jerseyType: orderData.jerseyType,
-  pricePerItem,
-  quantity: orderData.items.length,
-  totalAmount,
-  designReferenceURL: orderData.designReferenceURL || '',
-  orderType,
-  status: 'pending',
-  processedBy: null,
-  processedByName: null,
-  orderDate: Timestamp.now(),
-  confirmedDate: null,
-  completedDate: null
-});
+    batch.set(orderRef, {
+      orderId: orderRef.id,
+      orderNumber: orderNumber,
+      userId: customerId,
+      customerName,
+      customerContact,
+      customerEmail,
+      jerseyType: orderData.jerseyType,
+      pricePerItem,
+      quantity: orderData.items.length,
+      totalAmount,
+      designReferenceURL: orderData.designReferenceURL || '',
+      orderType,
+      status: initialStatus,
+      processedBy,
+      processedByName,
+      orderDate: Timestamp.now(),
+      confirmedDate: orderType === 'walk-in' ? Timestamp.now() : null,
+      completedDate: null
+    });
+
     // Add items
     orderData.items.forEach((item) => {
       const itemRef = doc(collection(db, `orders/${orderRef.id}/items`));
@@ -81,11 +93,11 @@ batch.set(orderRef, {
     const historyRef = doc(collection(db, `orders/${orderRef.id}/statusHistory`));
     batch.set(historyRef, {
       historyId: historyRef.id,
-      status: 'pending',
+      status: initialStatus,
       changedBy: userId || 'walk-in',
-      changedByName: customerName,
+      changedByName: orderType === 'walk-in' ? processedByName : customerName,
       timestamp: Timestamp.now(),
-      notes: 'Order created'
+      notes: historyNote
     });
 
     if (orderType === 'online') {
@@ -95,7 +107,7 @@ batch.set(orderRef, {
     }
 
     await batch.commit();
-    return { success: true, orderId: orderRef.id, totalAmount };
+    return { success: true, orderId: orderRef.id, orderNumber, totalAmount };
   } catch (error) {
     return { success: false, error: error.message };
   }
@@ -223,7 +235,7 @@ export const confirmOrder = async (orderId) => {
   }
 };
 
-// Update order status (staff/owner)
+// Update order status (staff)
 export const updateOrderStatus = async (orderId, newStatus, notes = '') => {
   try {
     const userId = auth.currentUser.uid;

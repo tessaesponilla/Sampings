@@ -6,7 +6,7 @@ import {
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db, firebaseApp } from '../config/firebase';
-import { initializeApp } from 'firebase/app';
+import { initializeApp, deleteApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 
 // Register customer only (Directly from RegisterPage)
@@ -35,33 +35,32 @@ export const registerCustomer = async (fullName, contactNumber, email, password)
   }
 };
 
+// Register staff (Owner only)
 export const registerStaff = async (fullName, email, contactNumber, password) => {
   try {
     const firebaseConfig = firebaseApp.options;
-    const secondaryApp = initializeApp(firebaseConfig, 'SecondaryStaff');
+    const secondaryApp = initializeApp(firebaseConfig, 'SecondaryStaff_' + Date.now());
     const secondaryAuth = getAuth(secondaryApp);
 
     const userCredential = await createUserWithEmailAndPassword(secondaryAuth, email, password);
     const user = userCredential.user;
 
-    const userData = {
+    await setDoc(doc(db, 'users', user.uid), {
       userId: user.uid,
       fullName,
       email,
-      contactNumber,  // ADD THIS
+      contactNumber,
       role: 'staff',
       status: 'active',
       processedOrders: 0,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
-    };
-
-    await setDoc(doc(db, 'users', user.uid), userData);
+    });
 
     await signOut(secondaryAuth);
-    await secondaryApp.delete();
+    await deleteApp(secondaryApp);  // ✅ FIXED: deleteApp instead of .delete()
 
-    return { success: true, userId: user.uid };
+    return { success: true, userId: user.uid, message: 'Staff account created successfully!' };
   } catch (error) {
     return { success: false, error: error.message };
   }

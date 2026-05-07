@@ -7,7 +7,7 @@ const StaffManagement = () => {
   const [staffList, setStaffList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
-  const [newStaff, setNewStaff] = useState({ fullName: '', email: '', password: '' });
+  const [newStaff, setNewStaff] = useState({ fullName: '', email: '', contactNumber: '', password: '' });
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState('');
   const [infoMessage, setInfoMessage] = useState('');

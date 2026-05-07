@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+
 import './App.css';
 
 // Components
@@ -17,6 +18,7 @@ import StaffManagement from './components/owner/StaffManagement';
 import OwnerReports from './components/owner/OwnerReports';
 import ProfileSettings from './components/common/ProfileSettings';
 import LiveTracking from './components/tracking/LiveTracking';
+import OrderDetailPage from './components/common/OrderDetailPage';
 
 // Protected Route Wrapper
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -186,6 +188,33 @@ function App() {
             <ProtectedRoute allowedRoles={['owner']}>
               <AppLayout title="Account Settings">
                 <ProfileSettings />
+              </AppLayout>
+            </ProtectedRoute>
+          } />
+
+          <Route path="/customer/orders/:orderId" element={
+            <ProtectedRoute allowedRoles={['customer']}>
+              <AppLayout title="Order Details">
+                <OrderDetailPage />
+              </AppLayout>
+            </ProtectedRoute>
+          } />
+
+
+          // Staff order detail page
+          <Route path="/staff/orders/:orderId" element={
+            <ProtectedRoute allowedRoles={['staff']}>
+              <AppLayout title="Order Details">
+                <OrderDetailPage />
+              </AppLayout>
+            </ProtectedRoute>
+          } />
+
+          // Owner order detail page
+          <Route path="/owner/orders/:orderId" element={
+            <ProtectedRoute allowedRoles={['owner']}>
+              <AppLayout title="Order Details">
+                <OrderDetailPage />
               </AppLayout>
             </ProtectedRoute>
           } />
