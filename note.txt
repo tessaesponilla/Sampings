@@ -1,0 +1,13 @@
+TODO:
+
+print for receipt with qr
+pdf download file for report
+uploud design and canview the deisgn in staff sid and owner side
+revise UI color combi
+icons for orders
+staff management check
+order item details of customer for staff and owner side
+
+
+
+database attributes revise
