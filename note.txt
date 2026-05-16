@@ -3,5 +3,5 @@ revise UI color combi
 icons for accross the app
 image display for full jersey/top only
 qr scanner and upload qr option sa mismo nga app(untested)
-track details law ay iya UI
-Account Settings law ay UI ya
+law ay UI sang everything 
+testing

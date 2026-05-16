@@ -51,7 +51,7 @@ export const AuthProvider = ({ children }) => {
     isStaff: userData?.role === 'staff',
     isOwner: userData?.role === 'owner',
     loading,
-    setUserData // Expose this so login/register can update it immediately if needed
+    setUserData 
   };
 
   return (

@@ -21,10 +21,9 @@ const LoginPage = () => {
       const result = await loginUser(email, password);
       
       if (result.success) {
-        // Update context immediately
+      
         setUserData(result.userData);
 
-        // Navigate based on role
         const role = result.userData.role;
         if (role === 'customer') {
           navigate('/customer/dashboard');

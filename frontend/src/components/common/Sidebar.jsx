@@ -15,7 +15,7 @@ const Sidebar = () => {
 
   const isActive = (path) => location.pathname === path;
 
-  // Customer navigation
+
   const customerLinks = [
     { path: '/customer/dashboard', label: 'My Orders', icon: '📦' },
     { path: '/customer/new-order', label: 'New Order', icon: '➕' },
@@ -23,14 +23,13 @@ const Sidebar = () => {
     { path: '/customer/profile', label: 'Account Settings', icon: '👤' },
   ];
 
-  // Staff navigation
   const staffLinks = [
     { path: '/staff/queue', label: 'Order Queue', icon: '📋' },
     { path: '/staff/walk-in', label: 'Walk-in Order', icon: '🚶' },
     { path: '/staff/profile', label: 'Account Settings', icon: '👤' },
   ];
 
-  // Owner navigation
+
   const ownerLinks = [
     { path: '/owner/dashboard', label: 'Insights', icon: '📊' },
     { path: '/owner/all-orders', label: 'All Orders', icon: '📋' },
@@ -44,7 +43,7 @@ const Sidebar = () => {
     : customerLinks;
 
   if (!userData) {
-    return null; // Don't render sidebar if no user data
+    return null; 
   }
 
   return (

@@ -3,7 +3,6 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 
 import './App.css';
 
-// Components
 import Sidebar from './components/common/Sidebar';
 import LoginPage from './components/auth/LoginPage';
 import RegisterPage from './components/auth/RegisterPage';
@@ -20,7 +19,6 @@ import ProfileSettings from './components/common/ProfileSettings';
 import LiveTracking from './components/tracking/LiveTracking';
 import OrderDetailPage from './components/common/OrderDetailPage';
 
-// Protected Route Wrapper
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { currentUser, userData, loading } = useAuth();
 
@@ -68,7 +66,6 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
   );
 };
 
-// Main App Layout with Sidebar
 const AppLayout = ({ children, title }) => (
   <>
     <main className="main-wrapper">
@@ -200,8 +197,6 @@ function App() {
             </ProtectedRoute>
           } />
 
-
-          // Staff order detail page
           <Route path="/staff/orders/:orderId" element={
             <ProtectedRoute allowedRoles={['staff']}>
               <AppLayout title="Order Details">
@@ -210,7 +205,6 @@ function App() {
             </ProtectedRoute>
           } />
 
-          // Owner order detail page
           <Route path="/owner/orders/:orderId" element={
             <ProtectedRoute allowedRoles={['owner']}>
               <AppLayout title="Order Details">

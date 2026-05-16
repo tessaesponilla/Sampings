@@ -48,7 +48,6 @@ const fetchOrders = async () => {
     return map[status] || status;
   };
 
-  // Count by status
   const pendingCount = orders.filter(o => o.status === 'pending').length;
   const confirmedCount = orders.filter(o => o.status === 'confirmed').length;
   const inProgressCount = orders.filter(o => o.status === 'in-progress').length;
@@ -59,7 +58,7 @@ const fetchOrders = async () => {
     .filter(o => {
       const matchesSearch = !searchTerm || o.customerName?.toLowerCase().includes(searchTerm.toLowerCase()) || o.orderId?.toLowerCase().includes(searchTerm.toLowerCase()) || o.orderNumber?.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesStatus = statusFilter === 'all' || o.status === statusFilter;
-      // If in active view, exclude completed
+    
       if (viewMode === 'active' && o.status === 'completed') return false;
       if (viewMode === 'completed' && o.status !== 'completed') return false;
       return matchesSearch && matchesStatus;
@@ -74,14 +73,13 @@ const fetchOrders = async () => {
       }
     });
 
-  // Pagination
+  
   const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
   const paginatedOrders = filteredOrders.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
 
-  // Reset page when filters change
   useEffect(() => { setCurrentPage(1); }, [viewMode, searchTerm, statusFilter]);
 
   if (loading) return <div className="card"><p>Loading orders...</p></div>;
@@ -131,7 +129,7 @@ const fetchOrders = async () => {
                   color: viewMode === 'active' ? 'var(--navy)' : 'var(--muted)',
                   boxShadow: viewMode === 'active' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none'
                 }}>
-                🔄 In Queue
+                In Queue
               </button>
               <button
                 onClick={() => { setViewMode('completed'); setStatusFilter('completed'); }}
@@ -142,7 +140,7 @@ const fetchOrders = async () => {
                   color: viewMode === 'completed' ? 'var(--navy)' : 'var(--muted)',
                   boxShadow: viewMode === 'completed' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none'
                 }}>
-                ✅ Completed
+                Completed
               </button>
             </div>
           )}
@@ -301,7 +299,6 @@ const fetchOrders = async () => {
   );
 };
 
-// Queue Card Component
 const QueueCard = ({ label, count, color, bg, icon, onClick }) => (
   <div 
     onClick={onClick}

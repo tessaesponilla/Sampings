@@ -38,7 +38,7 @@ const handleAddStaff = async (e) => {
     const result = await registerStaff(
       newStaff.fullName, 
       newStaff.email, 
-      newStaff.contactNumber,  // ADD THIS
+      newStaff.contactNumber,
       newStaff.password
     );
 

@@ -9,7 +9,7 @@ import { auth, db, firebaseApp } from '../config/firebase';
 import { initializeApp, deleteApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 
-// Register customer only (Directly from RegisterPage)
+
 export const registerCustomer = async (fullName, contactNumber, email, password) => {
   try {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -35,7 +35,6 @@ export const registerCustomer = async (fullName, contactNumber, email, password)
   }
 };
 
-// Register staff (Owner only)
 export const registerStaff = async (fullName, email, contactNumber, password) => {
   try {
     const firebaseConfig = firebaseApp.options;
@@ -58,7 +57,7 @@ export const registerStaff = async (fullName, email, contactNumber, password) =>
     });
 
     await signOut(secondaryAuth);
-    await deleteApp(secondaryApp);  // ✅ FIXED: deleteApp instead of .delete()
+    await deleteApp(secondaryApp);
 
     return { success: true, userId: user.uid, message: 'Staff account created successfully!' };
   } catch (error) {
@@ -66,7 +65,6 @@ export const registerStaff = async (fullName, email, contactNumber, password) =>
   }
 };
 
-// Login for all users
 export const loginUser = async (email, password) => {
   try {
     const userCredential = await signInWithEmailAndPassword(auth, email, password);

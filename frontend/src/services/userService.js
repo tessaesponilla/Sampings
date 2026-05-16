@@ -18,7 +18,6 @@ export const updateUserProfile = async (userId, profileData) => {
   }
 };
 
-// Change password
 export const changeUserPassword = async (newPassword) => {
   try {
     const user = auth.currentUser;
@@ -32,17 +31,16 @@ export const changeUserPassword = async (newPassword) => {
   }
 };
 
-// Create staff account (owner only)
+
 export const createStaffAccount = async (staffData) => {
   try {
-    // Create auth account
     const userCredential = await createUserWithEmailAndPassword(
       auth, 
       staffData.email, 
       staffData.password
     );
     
-    // Set user document
+    
     await setDoc(doc(db, 'users', userCredential.user.uid), {
       userId: userCredential.user.uid,
       fullName: staffData.fullName,
@@ -61,7 +59,6 @@ export const createStaffAccount = async (staffData) => {
   }
 };
 
-// Get all staff members (owner only)
 export const getAllStaff = async () => {
   try {
     const q = query(
@@ -81,7 +78,7 @@ export const getAllStaff = async () => {
   }
 };
 
-// Deactivate staff (owner only)
+
 export const deactivateStaffMember = async (staffId) => {
   try {
     await updateDoc(doc(db, 'users', staffId), {

@@ -5,7 +5,6 @@ import {
 } from 'firebase/firestore';
 import { db, auth } from '../config/firebase';
 
-// Create order (both online and walk-in)
 export const createOrder = async (orderData) => {
   try {
     const batch = writeBatch(db);
@@ -28,7 +27,6 @@ export const createOrder = async (orderData) => {
       customerEmail = userData.email;
       orderType = 'online';
     } else {
-      // Walk-in: processed by the staff who created it
       const staffDoc = await getDoc(doc(db, 'users', userId));
       const staffData = staffDoc.data();
       customerId = 'walk-in';
@@ -44,7 +42,6 @@ export const createOrder = async (orderData) => {
 
     const orderRef = doc(collection(db, 'orders'));
 
-    // Generate sequential order number
     const counterRef = doc(db, 'counters', 'orderNumber');
     const counterDoc = await getDoc(counterRef);
     let nextNumber = 1;
@@ -77,7 +74,6 @@ export const createOrder = async (orderData) => {
       completedDate: null
     });
 
-    // Add items
     orderData.items.forEach((item) => {
       const itemRef = doc(collection(db, `orders/${orderRef.id}/items`));
       batch.set(itemRef, {
@@ -89,7 +85,6 @@ export const createOrder = async (orderData) => {
       });
     });
 
-    // Add status history
     const historyRef = doc(collection(db, `orders/${orderRef.id}/statusHistory`));
     batch.set(historyRef, {
       historyId: historyRef.id,
@@ -113,7 +108,6 @@ export const createOrder = async (orderData) => {
   }
 };
 
-// Upload design image to Cloudinary
 export const uploadDesignImage = async (file) => {
   try {
     const formData = new FormData();
@@ -146,7 +140,6 @@ export const getCustomerOrders = async (customerId) => {
     const q = query(
       collection(db, 'orders'),
       where('userId', '==', customerId)
-      // orderBy('orderDate', 'desc')  // REMOVE THIS FOR NOW
     );
     const snapshot = await getDocs(q);
     const orders = snapshot.docs.map(doc => ({
@@ -154,7 +147,7 @@ export const getCustomerOrders = async (customerId) => {
       ...doc.data(),
       orderDate: doc.data().orderDate?.toDate()
     }));
-    // Sort on frontend
+  
     orders.sort((a, b) => new Date(b.orderDate) - new Date(a.orderDate));
     return { success: true, orders };
   } catch (error) {
@@ -163,8 +156,6 @@ export const getCustomerOrders = async (customerId) => {
 };
 
 
-
-// Get single order with items and history
 export const getOrderDetails = async (orderId) => {
   try {
     const orderDoc = await getDoc(doc(db, 'orders', orderId));
@@ -200,7 +191,6 @@ export const getOrderDetails = async (orderId) => {
   }
 };
 
-// Confirm order (staff action)
 export const confirmOrder = async (orderId) => {
   try {
     const userId = auth.currentUser.uid;
@@ -238,7 +228,6 @@ export const confirmOrder = async (orderId) => {
   }
 };
 
-// Update order status (staff)
 export const updateOrderStatus = async (orderId, newStatus, notes = '') => {
   try {
     const userId = auth.currentUser.uid;
@@ -271,7 +260,6 @@ export const updateOrderStatus = async (orderId, newStatus, notes = '') => {
   }
 };
 
-// Get customer dashboard stats
 export const getCustomerStats = async (customerId) => {
   try {
     const q = query(collection(db, 'orders'), where('userId', '==', customerId));
@@ -293,7 +281,6 @@ export const getCustomerStats = async (customerId) => {
   }
 };
 
-// Get active orders for staff queue
 export const getActiveOrders = async () => {
   try {
     const q = query(
@@ -313,7 +300,7 @@ export const getActiveOrders = async () => {
   }
 };
 
-// Get all orders (owner)
+
 export const getAllOrders = async () => {
   try {
     const q = query(collection(db, 'orders'), orderBy('orderDate', 'desc'));
@@ -329,7 +316,6 @@ export const getAllOrders = async () => {
   }
 };
 
-// Get owner insights
 export const getOwnerInsights = async (period = 'all') => {
   try {
     const snapshot = await getDocs(collection(db, 'orders'));

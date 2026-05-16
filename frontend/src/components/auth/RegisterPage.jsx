@@ -46,9 +46,9 @@ const RegisterPage = () => {
       );
 
       if (result.success) {
-        // Update context immediately
+    
         setUserData(result.userData);
-        // Redirect to customer dashboard
+    
         navigate('/customer/dashboard');
       } else {
         setLoading(false);

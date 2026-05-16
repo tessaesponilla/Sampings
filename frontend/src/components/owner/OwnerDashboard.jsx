@@ -93,7 +93,6 @@ const OwnerDashboard = () => {
   );
 };
 
-// Components
 const KpiCard = ({ icon, label, value, color, highlight }) => (
   <div style={{
     background: 'white',
