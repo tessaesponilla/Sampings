@@ -141,13 +141,12 @@ export const uploadDesignImage = async (file) => {
   }
 };
 
-// Get customer's orders
 export const getCustomerOrders = async (customerId) => {
   try {
     const q = query(
       collection(db, 'orders'),
-      where('userId', '==', customerId),
-      orderBy('orderDate', 'desc')
+      where('userId', '==', customerId)
+      // orderBy('orderDate', 'desc')  // REMOVE THIS FOR NOW
     );
     const snapshot = await getDocs(q);
     const orders = snapshot.docs.map(doc => ({
@@ -155,11 +154,15 @@ export const getCustomerOrders = async (customerId) => {
       ...doc.data(),
       orderDate: doc.data().orderDate?.toDate()
     }));
+    // Sort on frontend
+    orders.sort((a, b) => new Date(b.orderDate) - new Date(a.orderDate));
     return { success: true, orders };
   } catch (error) {
     return { success: false, error: error.message };
   }
 };
+
+
 
 // Get single order with items and history
 export const getOrderDetails = async (orderId) => {

@@ -2,15 +2,13 @@ import { doc, getDoc, updateDoc, setDoc, collection, query, where, getDocs, Time
 import { updatePassword, createUserWithEmailAndPassword } from 'firebase/auth';
 import { db, auth } from '../config/firebase';
 
-// Update user profile (name, contact number only)
 export const updateUserProfile = async (userId, profileData) => {
   try {
     const userRef = doc(db, 'users', userId);
-    const { fullName, contactNumber } = profileData;
     
     await updateDoc(userRef, {
-      ...(fullName && { fullName }),
-      ...(contactNumber && { contactNumber }),
+      fullName: profileData.fullName,
+      contactNumber: profileData.contactNumber,
       updatedAt: Timestamp.now()
     });
     

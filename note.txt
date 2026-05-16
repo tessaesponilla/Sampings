@@ -1,9 +1,7 @@
 TODO:
-
-print for receipt with qr
-pdf download file for report
 revise UI color combi
-icons for orders
-orders in staff side like the ubrahon palang and the completed na
-database attributes revise
-qr scanner and upload qr option in track order
+icons for accross the app
+image display for full jersey/top only
+qr scanner and upload qr option sa mismo nga app(untested)
+track details law ay iya UI
+Account Settings law ay UI ya
