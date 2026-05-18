@@ -13,14 +13,23 @@ const LiveTracking = () => {
   const [showScanner, setShowScanner] = useState(false);
   const scannerRef = useRef(null);
 
+  // Cleanup scanner on unmount
+  useEffect(() => {
+    return () => {
+      if (scannerRef.current) {
+        scannerRef.current.stop().catch(() => {});
+      }
+    };
+  }, []);
+
   const searchOrder = async (id) => {
     const searchTerm = id || searchOrderId;
     if (!searchTerm?.trim()) return;
-    
     setLoading(true);
     setError('');
     setOrder(null);
 
+    // Try direct document ID if not starting with ORD-
     if (!searchTerm.startsWith('ORD-')) {
       const result = await getOrderDetails(searchTerm);
       if (result?.success) {
@@ -30,24 +39,26 @@ const LiveTracking = () => {
       }
     }
 
-    const { db } = await import('../../config/firebase');
-    const { collection, query, where, getDocs } = await import('firebase/firestore');
-    
-    const q = query(collection(db, 'orders'), where('orderNumber', '==', searchTerm));
-    const snapshot = await getDocs(q);
-    
-    if (!snapshot.empty) {
-      const orderDoc = snapshot.docs[0];
-      const result = await getOrderDetails(orderDoc.id);
-      if (result?.success) {
-        setOrder(result.order);
+    // Search by orderNumber
+    try {
+      const { db } = await import('../../config/firebase');
+      const { collection, query, where, getDocs } = await import('firebase/firestore');
+      const q = query(collection(db, 'orders'), where('orderNumber', '==', searchTerm));
+      const snapshot = await getDocs(q);
+      if (!snapshot.empty) {
+        const orderDoc = snapshot.docs[0];
+        const result = await getOrderDetails(orderDoc.id);
+        if (result?.success) {
+          setOrder(result.order);
+        } else {
+          setError('Error loading order details.');
+        }
       } else {
-        setError('Error loading order details.');
+        setError('Order not found. Please check the order number.');
       }
-    } else {
-      setError('Order not found. Please check the order number.');
+    } catch (err) {
+      setError('An error occurred while searching.');
     }
-    
     setLoading(false);
   };
 
@@ -58,66 +69,68 @@ const LiveTracking = () => {
     }
   }, [orderId]);
 
+  // Camera Scanner
   const startScanner = async () => {
     setShowScanner(true);
+    setError('');
     try {
+      // Small delay to ensure DOM element is rendered
+      await new Promise(resolve => setTimeout(resolve, 100));
       const html5QrCode = new Html5Qrcode("qr-reader");
       scannerRef.current = html5QrCode;
-      
       await html5QrCode.start(
         { facingMode: "environment" },
         { fps: 10, qrbox: { width: 250, height: 250 } },
         async (decodedText) => {
+          // Stop scanner after successful scan
           await html5QrCode.stop();
           setShowScanner(false);
-          
           let extractedId = decodedText;
           if (decodedText.includes('/track/')) {
             extractedId = decodedText.split('/track/').pop();
           }
-          
           setSearchOrderId(extractedId);
           searchOrder(extractedId);
         },
-        () => {}
+        () => {} // ignore scan errors
       );
     } catch (err) {
       console.error('Scanner error:', err);
       setShowScanner(false);
-      setError('Could not access camera. Please check permissions.');
+      setError('Could not start camera. Please ensure camera permissions are granted and you are on HTTPS/localhost.');
     }
   };
 
   const stopScanner = async () => {
     if (scannerRef.current) {
-      try { await scannerRef.current.stop(); } catch (e) {}
+      try {
+        await scannerRef.current.stop();
+      } catch (e) {}
       scannerRef.current = null;
     }
     setShowScanner(false);
   };
 
+  // Upload QR Image
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    
     setLoading(true);
     setError('');
-    
     try {
       const html5QrCode = new Html5Qrcode("qr-reader-file");
       const decodedText = await html5QrCode.scanFile(file, true);
-      
       let extractedId = decodedText;
       if (decodedText.includes('/track/')) {
         extractedId = decodedText.split('/track/').pop();
       }
-      
       setSearchOrderId(extractedId);
       await searchOrder(extractedId);
     } catch (err) {
-      setError('Could not read QR code from image. Please try scanning with camera.');
-      setLoading(false);
+      console.error('Upload error:', err);
+      setError('Could not read QR code from image. Please try a clearer image or use the camera.');
     }
+    setLoading(false);
   };
 
   const getStatusStep = (status) => {
@@ -159,7 +172,7 @@ const LiveTracking = () => {
             display: 'flex', alignItems: 'center', gap: '6px', width: 'fit-content'
           }}
         >
-          ← Back to Home
+          ↩
         </button>
 
         {/* Header */}
@@ -272,12 +285,7 @@ const LiveTracking = () => {
               )}
             </div>
 
-            <div style={{ marginTop: '16px', textAlign: 'center' }}>
-              <div style={{ display: 'inline-block', padding: '8px 16px', background: 'rgba(255,255,255,0.05)',
-                borderRadius: '20px', color: 'rgba(255,255,255,0.6)', fontSize: '12px' }}>
-                {order.items?.length || order.quantity} players in this order
-              </div>
-            </div>
+            
           </div>
         )}
       </div>
