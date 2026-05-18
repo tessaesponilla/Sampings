@@ -27,17 +27,16 @@ const CustomerDashboard = () => {
 
   const getStatusBadge = (status) => {
     const map = {
-      'pending': { bg: 'var(--amber-bg)', color: 'var(--amber)', label: 'Pending' },
-      'confirmed': { bg: '#ede9fe', color: '#7c3aed', label: 'Confirmed' },
-      'in-progress': { bg: '#dbeafe', color: '#2563eb', label: 'In Progress' },
-      'ready-for-pickup': { bg: '#d1fae5', color: '#059669', label: 'Ready' },
-      'completed': { bg: 'var(--green-bg)', color: 'var(--green)', label: 'Completed' },
+      'pending': { bg: '#fff7ed', color: '#ea580c', label: 'Pending' },
+      'confirmed': { bg: '#f5f3ff', color: '#7c3aed', label: 'Confirmed' },
+      'in-progress': { bg: '#eff6ff', color: '#3b82f6', label: 'In Progress' },
+      'ready-for-pickup': { bg: '#dbeafe', color: '#2563eb', label: 'Ready' },
+      'completed': { bg: '#f0fdf4', color: '#16a34a', label: 'Completed' },
     };
-    const s = map[status] || { bg: 'var(--off)', color: 'var(--muted)', label: status };
+    const s = map[status] || { bg: '#f3f4f6', color: '#6b7280', label: status };
     return <span style={{ background: s.bg, color: s.color, padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 700 }}>{s.label}</span>;
   };
 
-  
   const totalPages = Math.ceil(orders.length / itemsPerPage);
   const paginatedOrders = orders.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
@@ -50,10 +49,57 @@ const CustomerDashboard = () => {
       </div>
 
       <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '15px', marginBottom: '2rem' }}>
-        <div className="stat-card"><div style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', color: 'var(--muted)' }}>Total Orders</div><div className="stat-value">{stats.totalOrders}</div></div>
-        <div className="stat-card" style={{ borderLeftColor: 'var(--amber)' }}><div style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', color: 'var(--muted)' }}>Pending</div><div className="stat-value" style={{ color: 'var(--amber)' }}>{stats.pending}</div></div>
-        <div className="stat-card" style={{ borderLeftColor: 'var(--purple)' }}><div style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', color: 'var(--muted)' }}>In Progress</div><div className="stat-value" style={{ color: 'var(--purple)' }}>{stats.inProgress}</div></div>
-        <div className="stat-card" style={{ borderLeftColor: 'var(--green)' }}><div style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', color: 'var(--muted)' }}>Completed</div><div className="stat-value" style={{ color: 'var(--green)' }}>{stats.completed}</div></div>
+        {/* Total Orders */}
+        <div className="stat-card">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <div style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', color: 'var(--muted)' }}>Total Orders</div>
+              <div className="stat-value">{stats.totalOrders}</div>
+            </div>
+            <div style={{ opacity: 0.7 }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2" stroke="var(--navy)" strokeWidth="2" strokeLinecap="round"/><rect x="8" y="2" width="8" height="4" rx="1" stroke="var(--navy)" strokeWidth="2"/><path d="M9 14l2 2 4-4" stroke="var(--navy)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </div>
+          </div>
+        </div>
+
+        {/* Pending - Orange */}
+        <div className="stat-card" style={{ borderLeftColor: '#ea580c' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <div style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', color: 'var(--muted)' }}>Pending</div>
+              <div className="stat-value" style={{ color: '#ea580c' }}>{stats.pending}</div>
+            </div>
+            <div style={{ opacity: 0.7 }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="#ea580c" strokeWidth="2"/><circle cx="12" cy="12" r="4" fill="#ea580c" opacity="0.3"/></svg>
+            </div>
+          </div>
+        </div>
+
+        {/* In Progress - Light Blue */}
+        <div className="stat-card" style={{ borderLeftColor: '#3b82f6' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <div style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', color: 'var(--muted)' }}>In Progress</div>
+              <div className="stat-value" style={{ color: '#3b82f6' }}>{stats.inProgress}</div>
+            </div>
+            <div style={{ opacity: 0.7 }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="#3b82f6" strokeWidth="2"/><path d="M12 6v6l4 2" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round"/></svg>
+            </div>
+          </div>
+        </div>
+
+        {/* Completed - Green */}
+        <div className="stat-card" style={{ borderLeftColor: '#16a34a' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <div style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', color: 'var(--muted)' }}>Completed</div>
+              <div className="stat-value" style={{ color: '#16a34a' }}>{stats.completed}</div>
+            </div>
+            <div style={{ opacity: 0.7 }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" stroke="#16a34a" strokeWidth="2" fill="#16a34a" fillOpacity="0.2"/><path d="M4 22V15" stroke="#16a34a" strokeWidth="2" strokeLinecap="round"/></svg>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="card">
@@ -70,9 +116,7 @@ const CustomerDashboard = () => {
           </div>
         ) : (
           <>
-            <div style={{ marginBottom: '12px', fontSize: '12px', color: 'var(--muted)' }}>
-              Showing {paginatedOrders.length} of {orders.length} orders
-            </div>
+            <div style={{ marginBottom: '12px', fontSize: '12px', color: 'var(--muted)' }}>Showing {paginatedOrders.length} of {orders.length} orders</div>
             <table className="order-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead><tr style={{ borderBottom: '2px solid var(--border)' }}><th style={{ padding: '12px', textAlign: 'left', fontSize: '11px', color: 'var(--muted)', fontWeight: 600, textTransform: 'uppercase' }}>Order ID</th><th style={{ padding: '12px', textAlign: 'left', fontSize: '11px', color: 'var(--muted)', fontWeight: 600, textTransform: 'uppercase' }}>Jersey</th><th style={{ padding: '12px', textAlign: 'left', fontSize: '11px', color: 'var(--muted)', fontWeight: 600, textTransform: 'uppercase' }}>Qty</th><th style={{ padding: '12px', textAlign: 'left', fontSize: '11px', color: 'var(--muted)', fontWeight: 600, textTransform: 'uppercase' }}>Date</th><th style={{ padding: '12px', textAlign: 'left', fontSize: '11px', color: 'var(--muted)', fontWeight: 600, textTransform: 'uppercase' }}>Status</th><th style={{ padding: '12px', textAlign: 'left', fontSize: '11px', color: 'var(--muted)', fontWeight: 600, textTransform: 'uppercase' }}></th></tr></thead>
               <tbody>
@@ -89,7 +133,6 @@ const CustomerDashboard = () => {
               </tbody>
             </table>
 
-            {/* Pagination */}
             {totalPages > 1 && (
               <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', marginTop: '20px', paddingTop: '16px', borderTop: '1px solid var(--border)' }}>
                 <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}

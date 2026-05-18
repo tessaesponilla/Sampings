@@ -1,7 +1,7 @@
 TODO:
 revise UI color combi
-icons for accross the app
-image display for full jersey/top only
+fix priority
 qr scanner and upload qr option sa mismo nga app(untested)
 law ay UI sang everything 
 testing
+error validation

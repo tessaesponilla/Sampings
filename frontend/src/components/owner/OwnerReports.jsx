@@ -51,9 +51,20 @@ const OwnerReports = () => {
   };
 
   const metrics = calculateMetrics();
-
   const totalPages = Math.ceil(orders.length / itemsPerPage);
   const paginatedOrders = orders.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  const getStatusBadge = (status) => {
+    const map = {
+      'pending': { bg: '#fff7ed', color: '#ea580c', label: 'Pending' },
+      'confirmed': { bg: '#f5f3ff', color: '#7c3aed', label: 'Confirmed' },
+      'in-progress': { bg: '#eff6ff', color: '#3b82f6', label: 'In Progress' },
+      'ready-for-pickup': { bg: '#dbeafe', color: '#2563eb', label: 'Ready' },
+      'completed': { bg: '#f0fdf4', color: '#16a34a', label: 'Completed' },
+    };
+    const s = map[status] || { bg: '#f3f4f6', color: '#6b7280', label: status };
+    return <span style={{ background: s.bg, color: s.color, padding: '4px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: 700 }}>{s.label}</span>;
+  };
 
   const generatePDF = async () => {
     setDownloading(true);
@@ -91,12 +102,8 @@ const OwnerReports = () => {
       doc.setFillColor(248, 250, 252);
       doc.roundedRect(margin, yPos, pageW - 2 * margin, 38, 3, 3, 'FD');
       doc.setTextColor(15, 25, 60);
-      doc.setFontSize(9);
-      doc.setFont('helvetica', 'bold');
-      doc.text('KEY METRICS', margin + 5, yPos + 8);
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(8);
-      doc.setTextColor(80, 85, 95);
+      doc.setFontSize(9); doc.setFont('helvetica', 'bold'); doc.text('KEY METRICS', margin + 5, yPos + 8);
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(80, 85, 95);
       const kpis = [
         { label: 'Total Orders', value: String(insights.totalOrders) },
         { label: 'Total Revenue', value: `PHP ${(insights.totalRevenue || 0).toLocaleString()}` },
@@ -112,16 +119,14 @@ const OwnerReports = () => {
       });
       yPos += 48;
 
-      doc.setDrawColor(220, 225, 235);
-      doc.setFillColor(248, 250, 252);
+      doc.setDrawColor(220, 225, 235); doc.setFillColor(248, 250, 252);
       doc.roundedRect(margin, yPos, (pageW - 2 * margin - 5) / 2.5, 38, 3, 3, 'FD');
-      doc.setTextColor(15, 25, 60);
-      doc.setFontSize(9); doc.setFont('helvetica', 'bold'); doc.text('ORDER TYPE BREAKDOWN', margin + 5, yPos + 8);
+      doc.setTextColor(15, 25, 60); doc.setFontSize(9); doc.setFont('helvetica', 'bold'); doc.text('ORDER TYPE BREAKDOWN', margin + 5, yPos + 8);
       doc.setFontSize(7); doc.setTextColor(120, 125, 135); doc.text('Online Orders', margin + 5, yPos + 18);
-      doc.setFontSize(11); doc.setTextColor(99, 102, 241); doc.setFont('helvetica', 'bold'); doc.text(String(metrics.onlineCount), margin + 5, yPos + 28);
+      doc.setFontSize(11); doc.setTextColor(59, 130, 246); doc.setFont('helvetica', 'bold'); doc.text(String(metrics.onlineCount), margin + 5, yPos + 28);
       doc.setFontSize(7); doc.setTextColor(80, 85, 95); doc.setFont('helvetica', 'normal'); doc.text(`PHP ${metrics.onlineRevenue.toLocaleString()}`, margin + 5, yPos + 35);
       doc.setFontSize(7); doc.setTextColor(120, 125, 135); doc.text('Walk-in Orders', margin + 40, yPos + 18);
-      doc.setFontSize(11); doc.setTextColor(245, 158, 11); doc.setFont('helvetica', 'bold'); doc.text(String(metrics.walkinCount), margin + 40, yPos + 28);
+      doc.setFontSize(11); doc.setTextColor(234, 88, 12); doc.setFont('helvetica', 'bold'); doc.text(String(metrics.walkinCount), margin + 40, yPos + 28);
       doc.setFontSize(7); doc.setTextColor(80, 85, 95); doc.setFont('helvetica', 'normal'); doc.text(`PHP ${metrics.walkinRevenue.toLocaleString()}`, margin + 40, yPos + 35);
 
       const rightBoxX = margin + (pageW - 2 * margin - 5) / 2.5 + 5;
@@ -131,10 +136,10 @@ const OwnerReports = () => {
       doc.setTextColor(15, 25, 60); doc.setFontSize(9); doc.setFont('helvetica', 'bold'); doc.text('STATUS BREAKDOWN', rightBoxX + 5, yPos + 8);
       const total = Object.values(insights.orderStatusBreakdown || {}).reduce((a, b) => a + b, 0) || 1;
       const statuses = [
-        { key: 'pending', label: 'Pending', color: [245, 158, 11] },
-        { key: 'confirmed', label: 'Confirmed', color: [99, 102, 241] },
-        { key: 'in-progress', label: 'In Progress', color: [124, 58, 237] },
-        { key: 'completed', label: 'Completed', color: [34, 197, 94] },
+        { key: 'pending', label: 'Pending', color: [234, 88, 12] },
+        { key: 'confirmed', label: 'Confirmed', color: [124, 58, 237] },
+        { key: 'in-progress', label: 'In Progress', color: [59, 130, 246] },
+        { key: 'completed', label: 'Completed', color: [22, 163, 74] },
       ];
       let statusY = yPos + 15;
       statuses.forEach(s => {
@@ -160,14 +165,12 @@ const OwnerReports = () => {
     ]);
 
     autoTable(doc, {
-      startY: yPos,
-      head: [['Order ID', 'Customer', 'Jersey', 'Qty', 'Type', 'Status', 'Total', 'Date', 'Processed By']],
-      body: tableData, theme: 'grid',
+      startY: yPos, head: [['Order ID', 'Customer', 'Jersey', 'Qty', 'Type', 'Status', 'Total', 'Date', 'Processed By']], body: tableData, theme: 'grid',
       headStyles: { fillColor: [15, 25, 60], textColor: [255, 255, 255], fontSize: 7, fontStyle: 'bold', halign: 'center' },
       bodyStyles: { fontSize: 6.5, textColor: [50, 55, 65], cellPadding: 2 },
       alternateRowStyles: { fillColor: [248, 250, 252] },
       margin: { left: margin, right: margin, bottom: 20 },
-      styles: { lineColor: [225, 230, 235], lineWidth: 0.3, overflow: 'linebreak' },
+      styles: { lineColor: [225, 230, 235], lineWidth: 0.3 },
       columnStyles: { 0: { cellWidth: 18, halign: 'center' }, 1: { cellWidth: 22 }, 2: { cellWidth: 18, halign: 'center' }, 3: { cellWidth: 10, halign: 'center' }, 4: { cellWidth: 15, halign: 'center' }, 5: { cellWidth: 20, halign: 'center' }, 6: { cellWidth: 22, halign: 'right' }, 7: { cellWidth: 20, halign: 'center' }, 8: { cellWidth: 'auto' } }
     });
 
@@ -200,17 +203,16 @@ const OwnerReports = () => {
 
       {insights && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '16px', marginBottom: '24px' }}>
-          <KpiCard label="Total Orders" value={insights.totalOrders} />
-          <KpiCard label="Revenue" value={`₱${(insights.totalRevenue || 0).toLocaleString()}`} />
-          <KpiCard label="Pending" value={(insights.orderStatusBreakdown?.pending || 0) + (insights.orderStatusBreakdown?.confirmed || 0)} color="var(--amber)" />
-          <KpiCard label="In Progress" value={insights.orderStatusBreakdown?.['in-progress'] || 0} color="var(--purple)" />
-          <KpiCard label="Completed" value={insights.orderStatusBreakdown?.completed || 0} color="var(--green)" />
+          <KpiCard icon={<DocIcon color="var(--navy)" />} label="Total Orders" value={insights.totalOrders} />
+          <KpiCard icon={<RevenueIcon color="var(--navy)" />} label="Revenue" value={`₱${(insights.totalRevenue || 0).toLocaleString()}`} />
+          <KpiCard icon={<CircleIcon color="#ea580c" />} label="Pending" value={(insights.orderStatusBreakdown?.pending || 0) + (insights.orderStatusBreakdown?.confirmed || 0)} color="#ea580c" />
+          <KpiCard icon={<ProgressIcon color="#3b82f6" />} label="In Progress" value={insights.orderStatusBreakdown?.['in-progress'] || 0} color="#3b82f6" />
+          <KpiCard icon={<FlagIcon color="#16a34a" />} label="Completed" value={insights.orderStatusBreakdown?.completed || 0} color="#16a34a" />
         </div>
       )}
 
       <div className="card" style={{ padding: '24px' }}>
         <h3 style={{ fontWeight: 700, fontSize: '16px', margin: '0 0 16px 0', color: 'var(--navy)' }}>Orders ({orders.length})</h3>
-        
         {orders.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '40px', color: 'var(--muted)' }}>No orders for this period.</div>
         ) : (
@@ -226,8 +228,8 @@ const OwnerReports = () => {
                       <td style={{ padding: '10px', fontWeight: 500 }}>{o.customerName || 'Walk-in'}</td>
                       <td style={{ padding: '10px', fontSize: '12px' }}>{o.jerseyType === 'full-set' ? 'Full Set' : 'Top Only'}</td>
                       <td style={{ padding: '10px', fontWeight: 600 }}>{o.quantity}</td>
-                      <td style={{ padding: '10px' }}><span style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '12px', fontWeight: 600, background: o.orderType === 'online' ? 'var(--accent2)' : 'var(--amber-bg)', color: o.orderType === 'online' ? 'var(--navy)' : 'var(--amber)' }}>{o.orderType}</span></td>
-                      <td style={{ padding: '10px' }}><span style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '12px', fontWeight: 600, textTransform: 'capitalize', background: o.status === 'completed' ? 'var(--green-bg)' : 'var(--accent2)', color: o.status === 'completed' ? 'var(--green)' : 'var(--navy)' }}>{(o.status||'').replace(/-/g,' ')}</span></td>
+                      <td style={{ padding: '10px' }}><span style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '12px', fontWeight: 600, background: o.orderType === 'online' ? 'var(--accent2)' : '#fff7ed', color: o.orderType === 'online' ? 'var(--navy)' : '#ea580c' }}>{o.orderType}</span></td>
+                      <td style={{ padding: '10px' }}>{getStatusBadge(o.status)}</td>
                       <td style={{ padding: '10px', fontWeight: 600 }}>₱{(o.totalAmount||0).toLocaleString()}</td>
                       <td style={{ padding: '10px', fontSize: '12px', color: 'var(--muted)' }}>{o.orderDate ? new Date(o.orderDate).toLocaleDateString() : ''}</td>
                       <td style={{ padding: '10px', fontSize: '12px', color: 'var(--muted)' }}>{o.processedByName || '-'}</td>
@@ -236,8 +238,6 @@ const OwnerReports = () => {
                 </tbody>
               </table>
             </div>
-
-            {/* Pagination */}
             {totalPages > 1 && (
               <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', marginTop: '20px', paddingTop: '16px', borderTop: '1px solid var(--border)' }}>
                 <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} style={{ padding: '8px 14px', borderRadius: '8px', border: '1px solid var(--border)', background: 'white', cursor: currentPage === 1 ? 'default' : 'pointer', opacity: currentPage === 1 ? 0.5 : 1, fontWeight: 600, fontSize: '13px' }}>← Prev</button>
@@ -254,15 +254,23 @@ const OwnerReports = () => {
   );
 };
 
-const KpiCard = ({ label, value, color }) => (
+const KpiCard = ({ icon, label, value, color }) => (
   <div style={{ background: 'white', borderRadius: '12px', padding: '18px', border: '1px solid var(--border)', borderLeft: `4px solid ${color || 'var(--navy)'}`, boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
       <div>
         <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', marginBottom: '4px' }}>{label}</div>
         <div style={{ fontSize: '20px', fontWeight: 700, color: color || 'var(--text)' }}>{value}</div>
       </div>
+      <div style={{ opacity: 0.7 }}>{icon}</div>
     </div>
   </div>
 );
+
+// SVG Icons
+const DocIcon = ({ color }) => (<svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2" stroke={color} strokeWidth="2" strokeLinecap="round"/><rect x="8" y="2" width="8" height="4" rx="1" stroke={color} strokeWidth="2"/><path d="M9 14l2 2 4-4" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>);
+const RevenueIcon = ({ color }) => (<svg width="22" height="22" viewBox="0 0 24 24" fill="none"><line x1="12" y1="1" x2="12" y2="23" stroke={color} strokeWidth="2"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>);
+const CircleIcon = ({ color }) => (<svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke={color} strokeWidth="2"/><circle cx="12" cy="12" r="4" fill={color} opacity="0.3"/></svg>);
+const ProgressIcon = ({ color }) => (<svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke={color} strokeWidth="2"/><path d="M12 6v6l4 2" stroke={color} strokeWidth="2" strokeLinecap="round"/></svg>);
+const FlagIcon = ({ color }) => (<svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" stroke={color} strokeWidth="2" fill={color} fillOpacity="0.2"/><path d="M4 22V15" stroke={color} strokeWidth="2" strokeLinecap="round"/></svg>);
 
 export default OwnerReports;

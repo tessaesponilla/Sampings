@@ -3,6 +3,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import { QRCodeSVG } from 'qrcode.react';
 import { createOrder, uploadDesignImage } from '../../services/orderService';
 import OrderReceipt from '../common/OrderReceipt';
+import fullSetImg from '../../assets/full.png';
+import topOnlyImg from '../../assets/toponly.png';
 
 const WalkInOrder = () => {
   const { userData } = useAuth();
@@ -24,10 +26,22 @@ const WalkInOrder = () => {
   const [showReceipt, setShowReceipt] = useState(false);
   const fileInputRef = useRef(null);
 
-  const jerseyOptions = [
-    { value: 'full-set', label: 'Full Jersey Set (Shirt & Shorts)', price: 800, icon: '👕🩳', description: 'Complete uniform with shirt and shorts' },
-    { value: 'top-only', label: 'Top Only (Shirt)', price: 400, icon: '👕', description: 'Jersey shirt only, no bottom shorts' },
-  ];
+const jerseyOptions = [
+  { 
+    value: 'full-set', 
+    label: 'Full Jersey Set', 
+    price: 800, 
+    image: fullSetImg, 
+    description: 'Complete uniform with shirt and shorts' 
+  },
+  { 
+    value: 'top-only', 
+    label: 'Top Only', 
+    price: 400, 
+    image: topOnlyImg, 
+    description: 'Jersey shirt only, no bottom shorts' 
+  },
+];
 
   const selectedJersey = jerseyOptions.find(j => j.value === formData.jerseyStyle);
   const basePrice = selectedJersey ? selectedJersey.price : 0;
@@ -134,15 +148,27 @@ const WalkInOrder = () => {
               <div className="form-group" style={{ gridColumn: 'span 2' }}><label className="form-label">Email (Optional)</label><input className="form-input" name="customerEmail" type="email" value={formData.customerEmail} onChange={handleInputChange} placeholder="customer@email.com" style={{ width: '100%' }} /></div>
               <div className="form-group" style={{ gridColumn: 'span 2' }}>
                 <label className="form-label">Select Jersey Type</label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', marginTop: '8px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '8px' }}>
                   {jerseyOptions.map(j => (
                     <div key={j.value} onClick={() => setFormData(prev => ({ ...prev, jerseyStyle: j.value }))}
-                      style={{ padding: '18px', borderRadius: '12px', cursor: 'pointer', border: `2px solid ${formData.jerseyStyle === j.value ? 'var(--navy)' : 'var(--border2)'}`, background: formData.jerseyStyle === j.value ? 'var(--accent2)' : 'var(--white)', transition: 'all 0.2s ease', position: 'relative' }}>
-                      <div style={{ fontSize: '28px', marginBottom: '8px' }}>{j.icon}</div>
-                      <div style={{ fontWeight: 700, fontSize: '15px', color: 'var(--text)', marginBottom: '4px' }}>{j.label}</div>
-                      <div style={{ fontSize: '12px', color: 'var(--muted)', marginBottom: '8px' }}>{j.description}</div>
-                      <div style={{ fontFamily: 'Bebas Neue, sans-serif', fontSize: '22px', color: 'var(--navy)', letterSpacing: '0.03em', fontWeight: 700 }}>₱{j.price.toLocaleString()}</div>
-                      {formData.jerseyStyle === j.value && <div style={{ position: 'absolute', top: '12px', right: '12px', background: 'var(--navy)', color: '#fff', width: '24px', height: '24px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 700 }}>✓</div>}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: '12px',
+                        padding: '14px', borderRadius: '12px', cursor: 'pointer',
+                        border: `2px solid ${formData.jerseyStyle === j.value ? 'var(--navy)' : 'var(--border2)'}`,
+                        background: formData.jerseyStyle === j.value ? 'var(--accent2)' : 'var(--white)',
+                        transition: 'all 0.2s ease', position: 'relative'
+                      }}>
+                      <div style={{ width: '80px', height: '80px', borderRadius: '10px', overflow: 'hidden', background: 'var(--off)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <img src={j.image} alt={j.label} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: 700, fontSize: '14px', color: 'var(--text)', marginBottom: '4px' }}>{j.label}</div>
+                        <div style={{ fontSize: '11px', color: 'var(--muted)', marginBottom: '6px' }}>{j.description}</div>
+                        <div style={{ fontFamily: 'Bebas Neue, sans-serif', fontSize: '20px', color: 'var(--navy)', fontWeight: 700 }}>₱{j.price.toLocaleString()}</div>
+                      </div>
+                      {formData.jerseyStyle === j.value && (
+                        <div style={{ position: 'absolute', top: '8px', right: '8px', background: 'var(--navy)', color: '#fff', width: '22px', height: '22px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700 }}>✓</div>
+                      )}
                     </div>
                   ))}
                 </div>

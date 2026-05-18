@@ -26,13 +26,13 @@ const CustomerOrders = () => {
 
   const getStatusBadge = (status) => {
     const map = {
-      'pending': { bg: 'var(--amber-bg)', color: 'var(--amber)', label: 'Pending' },
-      'confirmed': { bg: '#ede9fe', color: '#7c3aed', label: 'Confirmed' },
-      'in-progress': { bg: '#dbeafe', color: '#2563eb', label: 'In Progress' },
-      'ready-for-pickup': { bg: '#d1fae5', color: '#059669', label: 'Ready for Pickup' },
-      'completed': { bg: 'var(--green-bg)', color: 'var(--green)', label: 'Completed' },
+      'pending': { bg: '#fff7ed', color: '#ea580c', label: 'Pending' },
+      'confirmed': { bg: '#f5f3ff', color: '#7c3aed', label: 'Confirmed' },
+      'in-progress': { bg: '#eff6ff', color: '#3b82f6', label: 'In Progress' },
+      'ready-for-pickup': { bg: '#dbeafe', color: '#2563eb', label: 'Ready' },
+      'completed': { bg: '#f0fdf4', color: '#16a34a', label: 'Completed' },
     };
-    const s = map[status] || { bg: 'var(--off)', color: 'var(--muted)', label: status };
+    const s = map[status] || { bg: '#f3f4f6', color: '#6b7280', label: status };
     return <span style={{ background: s.bg, color: s.color, padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 700 }}>{s.label}</span>;
   };
 
@@ -43,7 +43,6 @@ const CustomerOrders = () => {
     const matchesStatus = statusFilter === 'all' || o.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
-
 
   const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
   const paginatedOrders = filteredOrders.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
@@ -56,20 +55,26 @@ const CustomerOrders = () => {
     <div className="card">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
         <h3 className="bebas" style={{ fontSize: '22px', margin: 0 }}>Order History</h3>
-        <button className="btn-yellow" style={{ padding: '8px 16px', fontSize: '13px' }} onClick={() => navigate('/customer/new-order')}>
-          + New Order
-        </button>
+        <button className="btn-yellow" style={{ padding: '8px 16px', fontSize: '13px' }} onClick={() => navigate('/customer/new-order')}>+ New Order</button>
       </div>
 
-      <div style={{ display: 'flex', gap: '10px', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
-        <input type="text" placeholder="Search by Order ID..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
-          className="form-input" style={{ flex: 1, minWidth: '200px' }} />
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '1.5rem', alignItems: 'center' }}>
+        <div style={{ position: 'relative', flex: '0 0 70%' }}>
+          <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', fontSize: '14px' }}>🔍</span>
+          <input type="text" placeholder="Search by Order ID..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
+            style={{ width: '100%', padding: '12px 12px 12px 38px', borderRadius: '10px', border: '1px solid var(--border)', fontSize: '13px', background: 'white' }} />
+          {searchTerm && (
+            <button onClick={() => setSearchTerm('')} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px', color: 'var(--muted)' }}>✕</button>
+          )}
+        </div>
         <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
-          className="form-input" style={{ minWidth: '150px' }}>
-          <option value="all">All Status</option>
-          <option value="pending">Pending</option><option value="confirmed">Confirmed</option>
-          <option value="in-progress">In Progress</option><option value="ready-for-pickup">Ready for Pickup</option>
-          <option value="completed">Completed</option>
+          style={{ flex: '0 0 30%', padding: '12px 14px', borderRadius: '10px', border: '1px solid var(--border)', fontSize: '13px', background: 'white', color: 'var(--text)', cursor: 'pointer' }}>
+          <option value="all">📋 All Status</option>
+          <option value="pending">🟠 Pending</option>
+          <option value="confirmed">🟣 Confirmed</option>
+          <option value="in-progress">🔵 In Progress</option>
+          <option value="ready-for-pickup">🔷 Ready</option>
+          <option value="completed">🟢 Completed</option>
         </select>
       </div>
 
@@ -81,9 +86,7 @@ const CustomerOrders = () => {
         </div>
       ) : (
         <>
-          <div style={{ marginBottom: '12px', fontSize: '12px', color: 'var(--muted)' }}>
-            Showing {paginatedOrders.length} of {filteredOrders.length} orders
-          </div>
+          <div style={{ marginBottom: '12px', fontSize: '12px', color: 'var(--muted)' }}>Showing {paginatedOrders.length} of {filteredOrders.length} orders</div>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: '2px solid var(--border)' }}>
@@ -113,23 +116,16 @@ const CustomerOrders = () => {
             </tbody>
           </table>
 
-          {/* Pagination */}
           {totalPages > 1 && (
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', marginTop: '20px', paddingTop: '16px', borderTop: '1px solid var(--border)' }}>
               <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}
-                style={{ padding: '8px 14px', borderRadius: '8px', border: '1px solid var(--border)', background: 'white', cursor: currentPage === 1 ? 'default' : 'pointer', opacity: currentPage === 1 ? 0.5 : 1, fontWeight: 600, fontSize: '13px' }}>
-                ← Prev
-              </button>
+                style={{ padding: '8px 14px', borderRadius: '8px', border: '1px solid var(--border)', background: 'white', cursor: currentPage === 1 ? 'default' : 'pointer', opacity: currentPage === 1 ? 0.5 : 1, fontWeight: 600, fontSize: '13px' }}>← Prev</button>
               {Array.from({ length: totalPages }, (_, i) => (
                 <button key={i + 1} onClick={() => setCurrentPage(i + 1)}
-                  style={{ width: '36px', height: '36px', borderRadius: '8px', border: currentPage === i + 1 ? '2px solid var(--navy)' : '1px solid var(--border)', background: currentPage === i + 1 ? 'var(--navy)' : 'white', color: currentPage === i + 1 ? 'white' : 'var(--text)', cursor: 'pointer', fontWeight: 700, fontSize: '13px' }}>
-                  {i + 1}
-                </button>
+                  style={{ width: '36px', height: '36px', borderRadius: '8px', border: currentPage === i + 1 ? '2px solid var(--navy)' : '1px solid var(--border)', background: currentPage === i + 1 ? 'var(--navy)' : 'white', color: currentPage === i + 1 ? 'white' : 'var(--text)', cursor: 'pointer', fontWeight: 700, fontSize: '13px' }}>{i + 1}</button>
               ))}
               <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}
-                style={{ padding: '8px 14px', borderRadius: '8px', border: '1px solid var(--border)', background: 'white', cursor: currentPage === totalPages ? 'default' : 'pointer', opacity: currentPage === totalPages ? 0.5 : 1, fontWeight: 600, fontSize: '13px' }}>
-                Next →
-              </button>
+                style={{ padding: '8px 14px', borderRadius: '8px', border: '1px solid var(--border)', background: 'white', cursor: currentPage === totalPages ? 'default' : 'pointer', opacity: currentPage === totalPages ? 0.5 : 1, fontWeight: 600, fontSize: '13px' }}>Next →</button>
             </div>
           )}
         </>

@@ -3,6 +3,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import { createOrder, uploadDesignImage } from '../../services/orderService';
 import { QRCodeSVG } from 'qrcode.react';
 import OrderReceipt from '../common/OrderReceipt';
+import fullSetImg from '../../assets/full.png';
+import topOnlyImg from '../../assets/toponly.png';
 
 const CustomerOrderForm = () => {
   const { currentUser, userData } = useAuth();
@@ -21,10 +23,22 @@ const CustomerOrderForm = () => {
   const [showReceipt, setShowReceipt] = useState(false);
   const fileInputRef = useRef(null);
 
-  const jerseyOptions = [
-    { value: 'full-set', label: 'Full Jersey Set (Shirt & Shorts)', price: 800, icon: '👕🩳', description: 'Complete uniform with shirt and shorts' },
-    { value: 'top-only', label: 'Top Only (Shirt)', price: 400, icon: '👕', description: 'Jersey shirt only, no bottom shorts' },
-  ];
+const jerseyOptions = [
+  { 
+    value: 'full-set', 
+    label: 'Full Jersey Set', 
+    price: 800, 
+    image: fullSetImg, 
+    description: 'Complete uniform with shirt and shorts' 
+  },
+  { 
+    value: 'top-only', 
+    label: 'Top Only', 
+    price: 400, 
+    image: topOnlyImg, 
+    description: 'Jersey shirt only, no bottom shorts' 
+  },
+];
 
   const handleItemChange = (index, field, value) => {
     const newItems = [...formData.items];
@@ -114,22 +128,36 @@ const CustomerOrderForm = () => {
       <div className="card">
         {activeTab === 1 && (
           <div>
-            <h3 className="bebas" style={{ fontSize: '24px', marginBottom: '1.5rem' }}>1. Select Jersey Type</h3>
-            <div style={{ marginBottom: '16px' }}><p style={{ color: 'var(--muted)', fontSize: '14px' }}>Welcome, <strong>{userData?.fullName}</strong>!</p></div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px' }}>
-              {jerseyOptions.map(j => (
-                <div key={j.value} onClick={() => setFormData(prev => ({ ...prev, jerseyStyle: j.value }))}
-                  style={{ padding: '18px', borderRadius: '12px', cursor: 'pointer', border: `2px solid ${formData.jerseyStyle === j.value ? 'var(--navy)' : 'var(--border2)'}`, background: formData.jerseyStyle === j.value ? 'var(--accent2)' : 'var(--white)', transition: 'all 0.2s ease', position: 'relative' }}>
-                  <div style={{ fontSize: '28px', marginBottom: '8px' }}>{j.icon}</div>
-                  <div style={{ fontWeight: 700, fontSize: '15px', color: 'var(--text)', marginBottom: '4px' }}>{j.label}</div>
-                  <div style={{ fontSize: '12px', color: 'var(--muted)', marginBottom: '8px' }}>{j.description}</div>
-                  <div style={{ fontFamily: 'Bebas Neue', fontSize: '22px', color: 'var(--navy)', fontWeight: 700 }}>₱{j.price.toLocaleString()}</div>
-                  {formData.jerseyStyle === j.value && <div style={{ position: 'absolute', top: '12px', right: '12px', background: 'var(--navy)', color: '#fff', width: '24px', height: '24px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 700 }}>✓</div>}
-                </div>
-              ))}
-            </div>
-            <button className="btn-yellow" style={{ marginTop: '20px' }} onClick={() => setActiveTab(2)} disabled={!formData.jerseyStyle}>Continue →</button>
-          </div>
+  <h3 className="bebas" style={{ fontSize: '24px', marginBottom: '1.5rem' }}>1. Select Jersey Type</h3>
+  <div style={{ marginBottom: '16px' }}><p style={{ color: 'var(--muted)', fontSize: '14px' }}>Welcome, <strong>{userData?.fullName}</strong>!</p></div>
+  
+  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+    {jerseyOptions.map(j => (
+      <div key={j.value} onClick={() => setFormData(prev => ({ ...prev, jerseyStyle: j.value }))}
+        style={{
+          display: 'flex', alignItems: 'center', gap: '16px',
+          padding: '16px', borderRadius: '12px', cursor: 'pointer',
+          border: `2px solid ${formData.jerseyStyle === j.value ? 'var(--navy)' : 'var(--border2)'}`,
+          background: formData.jerseyStyle === j.value ? 'var(--accent2)' : 'var(--white)',
+          transition: 'all 0.2s ease', position: 'relative'
+        }}>
+        <div style={{ width: '100px', height: '100px', borderRadius: '10px', overflow: 'hidden', background: 'var(--off)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <img src={j.image} alt={j.label} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+        </div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontWeight: 700, fontSize: '15px', color: 'var(--text)', marginBottom: '4px' }}>{j.label}</div>
+          <div style={{ fontSize: '12px', color: 'var(--muted)', marginBottom: '8px' }}>{j.description}</div>
+          <div style={{ fontFamily: 'Bebas Neue, sans-serif', fontSize: '24px', color: 'var(--navy)', fontWeight: 700 }}>₱{j.price.toLocaleString()}</div>
+        </div>
+        {formData.jerseyStyle === j.value && (
+          <div style={{ position: 'absolute', top: '10px', right: '10px', background: 'var(--navy)', color: '#fff', width: '24px', height: '24px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 700 }}>✓</div>
+        )}
+      </div>
+    ))}
+  </div>
+  
+  <button className="btn-yellow" style={{ marginTop: '20px' }} onClick={() => setActiveTab(2)} disabled={!formData.jerseyStyle}>Continue →</button>
+</div>
         )}
 
         {activeTab === 2 && (
