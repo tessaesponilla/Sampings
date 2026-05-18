@@ -46,49 +46,64 @@
     };
 
     const tabs = [
-        { key: 'info', label: ' Information' },
-        { key: 'players', label: ` Player Details (${order.items?.length || 0})` },
-        { key: 'timeline', label: ' Timeline' },
-        { key: 'design', label: ' Design Reference' },
+        { key: 'info', label: 'Information' },
+        { key: 'players', label: `Player Details (${order.items?.length || 0})` },
+        { key: 'timeline', label: 'Timeline' },
+        { key: 'design', label: 'Design Reference' },
     ];
 
     return (
         <div>
-        <button onClick={() => navigate(-1)} style={{ marginBottom: '16px', padding: '8px 16px', background: 'white', border: '1px solid var(--border)', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '13px' }}>
-            ← Back
-        </button>
-
+        {/* Header Card with Back Button Inside */}
         <div className="card" style={{ padding: '20px 24px', marginBottom: '16px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-            <div>
-                <h2 className="bebas" style={{ fontSize: '24px', margin: 0, color: 'var(--navy)' }}>
-                Order {order.orderNumber || `#${order.orderId?.slice(-6)}`}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <button
+                    onClick={() => navigate(-1)}
+                    style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '8px 16px',
+                    background: 'white',
+                    border: '1px solid var(--border)',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    fontWeight: 600,
+                    fontSize: '13px',
+                    color: 'var(--text)',
+                    whiteSpace: 'nowrap'
+                    }}
+                >
+                    ↩
+                </button>
+                <h2 className="bebas" style={{ fontSize: '24px', margin: 0, color: 'var(--navy)', whiteSpace: 'nowrap' }}>
+                    Order {order.orderNumber || `#${order.orderId?.slice(-6)}`}
                 </h2>
-                <p style={{ color: 'var(--muted)', fontSize: '12px', margin: '4px 0 0 0' }}>
-                {order.orderDate ? new Date(order.orderDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : ''}
-                </p>
-            </div>
-            {getStatusBadge(order.status)}
+                </div>
+                {getStatusBadge(order.status)}
             </div>
 
-            <div style={{ display: 'flex', gap: '4px', marginTop: '16px', background: 'var(--off)', borderRadius: '10px', padding: '4px', width: 'fit-content' }}>
-            {tabs.map(tab => (
+            {/* Tabs – unchanged */}
+            <div style={{ display: 'flex', gap: '4px', background: 'var(--off)', borderRadius: '10px', padding: '4px', width: 'fit-content' }}>
+                {tabs.map(tab => (
                 <button key={tab.key} onClick={() => setActiveTab(tab.key)}
-                style={{
+                    style={{
                     padding: '8px 16px', border: 'none', borderRadius: '8px', cursor: 'pointer',
                     fontWeight: 600, fontSize: '12px', whiteSpace: 'nowrap',
                     background: activeTab === tab.key ? 'white' : 'transparent',
                     color: activeTab === tab.key ? 'var(--navy)' : 'var(--muted)',
                     boxShadow: activeTab === tab.key ? '0 1px 3px rgba(0,0,0,0.08)' : 'none'
-                }}>
-                {tab.label}
+                    }}>
+                    {tab.label}
                 </button>
-            ))}
+                ))}
             </div>
-        </div>
+            </div>
 
+        {/* Tab Content */}
         <div className="card" style={{ padding: '24px', minHeight: '300px' }}>
-            {/* INFORMATION TAB */}
+            {/* INFO TAB */}
             {activeTab === 'info' && (
             <div style={{ maxWidth: '500px' }}>
                 <InfoRow label="Customer" value={order.customerName} />
