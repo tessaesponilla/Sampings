@@ -1,7 +1,6 @@
 TODO:
-revise UI color combi
 fix priority
 qr scanner and upload qr option sa mismo nga app(untested)
-law ay UI sang everything 
 testing
 error validation
+media-query for responsizeness

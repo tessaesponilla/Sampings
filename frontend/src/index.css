@@ -230,7 +230,7 @@ body {
 }
 
 /* COMMON UI */
-.card { background: white; border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+.card { background: white; border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem; }
 
 
 .sidebar-logo {
@@ -265,7 +265,7 @@ body {
 }
 
 .stat-card {
-  background: white; border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; position: relative; overflow: hidden;
+  background: white; border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; position: relative; overflow: hidden;
 }
 
 
@@ -287,3 +287,20 @@ body {
 .form-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-bottom: 5px; display: block; }
 .form-input { border: 1px solid var(--border2); border-radius: var(--radius); padding: 10px 14px; font-size: 14px; color: var(--text); outline: none; transition: border 0.2s; background: white; }
 .form-input:focus { border-color: var(--navy); box-shadow: 0 0 0 3px rgba(12, 64, 116, 0.08); }
+
+
+@media (max-width: 768px) {
+  .landing-container {
+    text-align: center;
+  }
+  .btn-yellow, .btn-outline {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@keyframes floatBlob {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(15px, -10px) scale(1.02); }
+  100% { transform: translate(-5px, 10px) scale(0.98); }
+}

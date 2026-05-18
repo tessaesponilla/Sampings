@@ -53,11 +53,6 @@ const CustomerOrders = () => {
 
   return (
     <div className="card">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-        <h3 className="bebas" style={{ fontSize: '22px', margin: 0 }}>Order History</h3>
-        <button className="btn-yellow" style={{ padding: '8px 16px', fontSize: '13px' }} onClick={() => navigate('/customer/new-order')}>+ New Order</button>
-      </div>
-
       <div style={{ display: 'flex', gap: '10px', marginBottom: '1.5rem', alignItems: 'center' }}>
         <div style={{ position: 'relative', flex: '0 0 70%' }}>
           <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', fontSize: '14px' }}>🔍</span>

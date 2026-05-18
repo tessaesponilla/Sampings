@@ -103,11 +103,6 @@ const CustomerDashboard = () => {
       </div>
 
       <div className="card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-          <h3 className="bebas" style={{ fontSize: '22px', margin: 0 }}>My Orders</h3>
-          <button className="btn-yellow" style={{ padding: '8px 16px', fontSize: '13px' }} onClick={() => navigate('/customer/new-order')}>+ New Order</button>
-        </div>
-
         {orders.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '40px', color: 'var(--muted)' }}>
             <p style={{ fontSize: '40px', marginBottom: '10px' }}>📦</p>
