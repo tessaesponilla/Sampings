@@ -1,5 +1,7 @@
 TODO:
 in live trackings (way ga work ang upload QR image) pwede man ukson ta sa since gagana na QR scan kag field for order number
+in add loading after input, scan or upload for fetching 
+
 account settings (change password not working)
 testing
 error validation
