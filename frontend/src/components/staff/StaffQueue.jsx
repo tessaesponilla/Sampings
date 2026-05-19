@@ -52,12 +52,14 @@ const StaffQueue = ({ readOnly = false }) => {
     return <span style={{ background: s.bg, color: s.color, padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 700 }}>{s.label}</span>;
   };
 
+  // Counts for cards
   const pendingCount = orders.filter(o => o.status === 'pending').length;
   const confirmedCount = orders.filter(o => o.status === 'confirmed').length;
   const inProgressCount = orders.filter(o => o.status === 'in-progress').length;
   const readyCount = orders.filter(o => o.status === 'ready-for-pickup').length;
   const completedCount = orders.filter(o => o.status === 'completed').length;
 
+  // Filter and sort
   const filteredOrders = orders
     .filter(o => {
       const matchesSearch = !searchTerm || o.customerName?.toLowerCase().includes(searchTerm.toLowerCase()) || o.orderId?.toLowerCase().includes(searchTerm.toLowerCase()) || o.orderNumber?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -67,6 +69,14 @@ const StaffQueue = ({ readOnly = false }) => {
       return matchesSearch && matchesStatus;
     })
     .sort((a, b) => {
+      // Active view: sort by order number (ascending), lower number = higher priority
+      if (viewMode === 'active') {
+        // Extract numeric part from orderNumber (e.g., ORD-0001 → 1)
+        const numA = a.orderNumber ? parseInt(a.orderNumber.replace(/\D/g, ''), 10) : Infinity;
+        const numB = b.orderNumber ? parseInt(b.orderNumber.replace(/\D/g, ''), 10) : Infinity;
+        return numA - numB;
+      }
+      // Default sorting for completed/all views
       switch (sortBy) {
         case 'newest': return new Date(b.orderDate) - new Date(a.orderDate);
         case 'oldest': return new Date(a.orderDate) - new Date(b.orderDate);
@@ -76,6 +86,7 @@ const StaffQueue = ({ readOnly = false }) => {
       }
     });
 
+  // Pagination
   const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
   const paginatedOrders = filteredOrders.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
@@ -85,16 +96,16 @@ const StaffQueue = ({ readOnly = false }) => {
 
   return (
     <div>
-      {/* QUEUE CARDS */}
+      {/* Queue Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px', marginBottom: '20px' }}>
-        <QueueCard label="Pending" count={pendingCount} color="#ea580c" bg="#fff7ed" icon={<CircleIcon color="#ea580c" />} onClick={() => { setViewMode('active'); setStatusFilter('pending'); }} />
-        <QueueCard label="Confirmed" count={confirmedCount} color="#7c3aed" bg="#f5f3ff" icon={<CheckIcon color="#7c3aed" />} onClick={() => { setViewMode('active'); setStatusFilter('confirmed'); }} />
-        <QueueCard label="In Progress" count={inProgressCount} color="#3b82f6" bg="#eff6ff" icon={<ProgressIcon color="#3b82f6" />} onClick={() => { setViewMode('active'); setStatusFilter('in-progress'); }} />
         <QueueCard label="Ready" count={readyCount} color="#2563eb" bg="#dbeafe" icon={<BoxIcon color="#2563eb" />} onClick={() => { setViewMode('active'); setStatusFilter('ready-for-pickup'); }} />
+        <QueueCard label="In Progress" count={inProgressCount} color="#3b82f6" bg="#eff6ff" icon={<ProgressIcon color="#3b82f6" />} onClick={() => { setViewMode('active'); setStatusFilter('in-progress'); }} />
+        <QueueCard label="Confirmed" count={confirmedCount} color="#7c3aed" bg="#f5f3ff" icon={<CheckIcon color="#7c3aed" />} onClick={() => { setViewMode('active'); setStatusFilter('confirmed'); }} />
+        <QueueCard label="Pending" count={pendingCount} color="#ea580c" bg="#fff7ed" icon={<CircleIcon color="#ea580c" />} onClick={() => { setViewMode('active'); setStatusFilter('pending'); }} />
         <QueueCard label="Completed" count={completedCount} color="#16a34a" bg="#f0fdf4" icon={<FlagIcon color="#16a34a" />} onClick={() => { setViewMode('completed'); setStatusFilter('completed'); }} />
       </div>
 
-      {/* MAIN CONTENT */}
+      {/* Main Content */}
       <div className="card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
           <h3 className="bebas" style={{ fontSize: '22px', margin: 0 }}>
@@ -110,6 +121,7 @@ const StaffQueue = ({ readOnly = false }) => {
           )}
         </div>
 
+        {/* Search & Sort */}
         <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', flexWrap: 'wrap', alignItems: 'center' }}>
           <div style={{ position: 'relative', flex: 1, minWidth: '220px' }}>
             <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', fontSize: '14px' }}>🔍</span>
@@ -119,15 +131,21 @@ const StaffQueue = ({ readOnly = false }) => {
           </div>
           <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}
             style={{ padding: '10px 14px', borderRadius: '10px', border: '1px solid var(--border)', fontSize: '13px', background: 'white', cursor: 'pointer', minWidth: '140px' }}>
-            <option value="newest">Date: Newest First</option><option value="oldest">Date: Oldest First</option>
-            <option value="name-asc">Name: A → Z</option><option value="name-desc">Name: Z → A</option>
+            <option value="newest">Date: Newest First</option>
+            <option value="oldest">Date: Oldest First</option>
+            <option value="name-asc">Name: A → Z</option>
+            <option value="name-desc">Name: Z → A</option>
           </select>
         </div>
 
+        {/* Results Info */}
         <div style={{ marginBottom: '12px', fontSize: '12px', color: 'var(--muted)' }}>
-          Showing {paginatedOrders.length} of {filteredOrders.length} orders{viewMode === 'active' ? ' in queue' : viewMode === 'completed' ? ' completed' : ''}
+          Showing {paginatedOrders.length} of {filteredOrders.length} orders
+          {viewMode === 'active' ? ' in queue' : viewMode === 'completed' ? ' completed' : ''}
+          {statusFilter !== 'all' && ` · Filtered by: ${statusFilter.replace(/-/g, ' ')}`}
         </div>
 
+        {/* Orders Table */}
         {filteredOrders.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '40px', color: 'var(--muted)' }}>
             <p style={{ fontSize: '40px' }}>{viewMode === 'completed' ? '🎉' : '📋'}</p>
@@ -149,51 +167,67 @@ const StaffQueue = ({ readOnly = false }) => {
               </tr>
             </thead>
             <tbody>
-              {paginatedOrders.map((o, idx) => (
-                <tr key={o.id} onClick={() => navigate(`/${readOnly ? 'owner' : 'staff'}/orders/${o.id}`)}
-                  style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer', transition: 'background 0.15s ease' }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = 'var(--accent2)'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
-                  {!readOnly && viewMode === 'active' && (
-                    <td style={{ padding: '10px 12px', textAlign: 'center' }}>
-                      <span style={{ width: '24px', height: '24px', borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 700,
-                        background: o.status === 'pending' ? '#fff7ed' : o.status === 'confirmed' ? '#f5f3ff' : o.status === 'in-progress' ? '#eff6ff' : '#dbeafe',
-                        color: o.status === 'pending' ? '#ea580c' : o.status === 'confirmed' ? '#7c3aed' : o.status === 'in-progress' ? '#3b82f6' : '#2563eb'
-                      }}>{o.status === 'pending' ? '1' : o.status === 'confirmed' ? '2' : o.status === 'in-progress' ? '3' : '4'}</span>
-                    </td>
-                  )}
-                  <td style={{ padding: '10px 12px', fontFamily: 'Bebas Neue', color: 'var(--navy)', fontSize: '14px' }}>{o.orderNumber || `#${o.orderId?.slice(-6)}`}</td>
-                  <td style={{ padding: '10px 12px' }}><div style={{ fontWeight: 600, fontSize: '13px' }}>{o.customerName}</div><div style={{ fontSize: '11px', color: 'var(--muted)' }}>{o.customerContact}</div></td>
-                  <td style={{ padding: '10px 12px', fontSize: '13px' }}>{o.jerseyType === 'full-set' ? 'Full Set' : 'Top Only'}</td>
-                  <td style={{ padding: '10px 12px', fontWeight: 600 }}>{o.quantity}</td>
-                  <td style={{ padding: '10px 12px' }}><span style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '12px', fontWeight: 700, background: o.orderType === 'online' ? 'var(--accent2)' : '#fff7ed', color: o.orderType === 'online' ? 'var(--navy)' : '#ea580c' }}>{o.orderType}</span></td>
-                  <td style={{ padding: '10px 12px', fontSize: '12px' }}>{getStatusBadge(o.status)}</td>
-                  {!readOnly && (
-                    <td style={{ padding: '10px 12px' }} onClick={(e) => e.stopPropagation()}>
-                      {o.status === 'pending' && <button className="btn-navy" style={{ padding: '6px 14px', fontSize: '12px', borderRadius: '6px' }} onClick={(e) => { e.stopPropagation(); handleConfirm(o.id); }} disabled={actionLoading === o.id}>{actionLoading === o.id ? '...' : 'Confirm'}</button>}
-                      {o.status === 'confirmed' && <button className="btn-navy" style={{ padding: '6px 14px', fontSize: '12px', borderRadius: '6px' }} onClick={(e) => { e.stopPropagation(); handleUpdateStatus(o.id, 'in-progress'); }} disabled={actionLoading === o.id}>Start</button>}
-                      {o.status === 'in-progress' && <button className="btn-navy" style={{ padding: '6px 14px', fontSize: '12px', borderRadius: '6px' }} onClick={(e) => { e.stopPropagation(); handleUpdateStatus(o.id, 'ready-for-pickup'); }} disabled={actionLoading === o.id}>Ready</button>}
-                      {o.status === 'ready-for-pickup' && <button className="btn-navy" style={{ padding: '6px 14px', fontSize: '12px', borderRadius: '6px' }} onClick={(e) => { e.stopPropagation(); handleUpdateStatus(o.id, 'completed'); }} disabled={actionLoading === o.id}>Done</button>}
-                      {o.status === 'completed' && <span style={{ color: '#16a34a', fontSize: '12px', fontWeight: 600 }}>✅ Done</span>}
-                    </td>
-                  )}
-                  {readOnly && <td style={{ padding: '10px 12px', fontSize: '12px', color: 'var(--muted)' }}>{o.processedByName || '—'}</td>}
-                </tr>
-              ))}
+              {paginatedOrders.map((o, idx) => {
+                const isFirstInQueue = !readOnly && viewMode === 'active' && currentPage === 1 && idx === 0;
+                return (
+                  <tr key={o.id}
+                    onClick={() => navigate(`/${readOnly ? 'owner' : 'staff'}/orders/${o.id}`)}
+                    style={{
+                      borderBottom: '1px solid var(--border)',
+                      cursor: 'pointer',
+                      transition: 'background 0.15s ease',
+                      background: isFirstInQueue ? '#fef9ec' : 'transparent',
+                      borderLeft: isFirstInQueue ? '4px solid #ea580c' : '4px solid transparent'
+                    }}
+                    onMouseEnter={(e) => { if (!isFirstInQueue) e.currentTarget.style.background = 'var(--accent2)'; }}
+                    onMouseLeave={(e) => { if (!isFirstInQueue) e.currentTarget.style.background = 'transparent'; }}
+                    title="Click to view order details"
+                  >
+                    {/* Priority Number – sequential rank */}
+                    {!readOnly && viewMode === 'active' && (
+                      <td style={{ padding: '10px 12px', textAlign: 'center' }}>
+                        <span style={{
+                          width: '24px', height: '24px', borderRadius: '50%',
+                          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: '11px', fontWeight: 700,
+                          background: isFirstInQueue ? '#ea580c' : '#fff7ed',
+                          color: isFirstInQueue ? 'white' : '#ea580c'
+                        }}>
+                          {(currentPage - 1) * itemsPerPage + idx + 1}
+                        </span>
+                      </td>
+                    )}
+                    <td style={{ padding: '10px 12px', fontFamily: 'Bebas Neue', color: 'var(--navy)', fontSize: '14px' }}>{o.orderNumber || `#${o.orderId?.slice(-6)}`}</td>
+                    <td style={{ padding: '10px 12px' }}><div style={{ fontWeight: 600, fontSize: '13px' }}>{o.customerName}</div><div style={{ fontSize: '11px', color: 'var(--muted)' }}>{o.customerContact}</div></td>
+                    <td style={{ padding: '10px 12px', fontSize: '13px' }}>{o.jerseyType === 'full-set' ? 'Full Set' : 'Top Only'}</td>
+                    <td style={{ padding: '10px 12px', fontWeight: 600 }}>{o.quantity}</td>
+                    <td style={{ padding: '10px 12px' }}><span style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '12px', fontWeight: 700, background: o.orderType === 'online' ? 'var(--accent2)' : '#fff7ed', color: o.orderType === 'online' ? 'var(--navy)' : '#ea580c' }}>{o.orderType}</span></td>
+                    <td style={{ padding: '10px 12px', fontSize: '12px' }}>{getStatusBadge(o.status)}</td>
+                    {!readOnly && (
+                      <td style={{ padding: '10px 12px' }} onClick={(e) => e.stopPropagation()}>
+                        {o.status === 'pending' && <button className="btn-navy" style={{ padding: '6px 14px', fontSize: '12px', borderRadius: '6px' }} onClick={(e) => { e.stopPropagation(); handleConfirm(o.id); }} disabled={actionLoading === o.id}>{actionLoading === o.id ? '...' : 'Confirm'}</button>}
+                        {o.status === 'confirmed' && <button className="btn-navy" style={{ padding: '6px 14px', fontSize: '12px', borderRadius: '6px' }} onClick={(e) => { e.stopPropagation(); handleUpdateStatus(o.id, 'in-progress'); }} disabled={actionLoading === o.id}>Start</button>}
+                        {o.status === 'in-progress' && <button className="btn-navy" style={{ padding: '6px 14px', fontSize: '12px', borderRadius: '6px' }} onClick={(e) => { e.stopPropagation(); handleUpdateStatus(o.id, 'ready-for-pickup'); }} disabled={actionLoading === o.id}>Ready</button>}
+                        {o.status === 'ready-for-pickup' && <button className="btn-navy" style={{ padding: '6px 14px', fontSize: '12px', borderRadius: '6px' }} onClick={(e) => { e.stopPropagation(); handleUpdateStatus(o.id, 'completed'); }} disabled={actionLoading === o.id}>Done</button>}
+                        {o.status === 'completed' && <span style={{ color: '#16a34a', fontSize: '12px', fontWeight: 600 }}>Done</span>}
+                      </td>
+                    )}
+                    {readOnly && <td style={{ padding: '10px 12px', fontSize: '12px', color: 'var(--muted)' }}>{o.processedByName || '—'}</td>}
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}
 
+        {/* Pagination */}
         {totalPages > 1 && (
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', marginTop: '20px', paddingTop: '16px', borderTop: '1px solid var(--border)' }}>
-            <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}
-              style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'white', cursor: currentPage === 1 ? 'default' : 'pointer', opacity: currentPage === 1 ? 0.5 : 1, fontWeight: 600, fontSize: '13px' }}>← Prev</button>
+            <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'white', cursor: currentPage === 1 ? 'default' : 'pointer', opacity: currentPage === 1 ? 0.5 : 1, fontWeight: 600, fontSize: '13px' }}>← Prev</button>
             {Array.from({ length: totalPages }, (_, i) => (
-              <button key={i + 1} onClick={() => setCurrentPage(i + 1)}
-                style={{ width: '36px', height: '36px', borderRadius: '8px', border: currentPage === i + 1 ? '2px solid var(--navy)' : '1px solid var(--border)', background: currentPage === i + 1 ? 'var(--navy)' : 'white', color: currentPage === i + 1 ? 'white' : 'var(--text)', cursor: 'pointer', fontWeight: 700, fontSize: '13px' }}>{i + 1}</button>
+              <button key={i + 1} onClick={() => setCurrentPage(i + 1)} style={{ width: '36px', height: '36px', borderRadius: '8px', border: currentPage === i + 1 ? '2px solid var(--navy)' : '1px solid var(--border)', background: currentPage === i + 1 ? 'var(--navy)' : 'white', color: currentPage === i + 1 ? 'white' : 'var(--text)', cursor: 'pointer', fontWeight: 700, fontSize: '13px' }}>{i + 1}</button>
             ))}
-            <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}
-              style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'white', cursor: currentPage === totalPages ? 'default' : 'pointer', opacity: currentPage === totalPages ? 0.5 : 1, fontWeight: 600, fontSize: '13px' }}>Next →</button>
+            <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'white', cursor: currentPage === totalPages ? 'default' : 'pointer', opacity: currentPage === totalPages ? 0.5 : 1, fontWeight: 600, fontSize: '13px' }}>Next →</button>
           </div>
         )}
       </div>
@@ -201,6 +235,7 @@ const StaffQueue = ({ readOnly = false }) => {
   );
 };
 
+// Queue Card Component
 const QueueCard = ({ label, count, color, bg, icon, onClick }) => (
   <div onClick={onClick} style={{ background: 'white', borderRadius: '14px', padding: '16px 20px', border: '1px solid var(--border)', borderLeft: `4px solid ${color}`, cursor: 'pointer', transition: 'all 0.2s ease', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}
     onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}>
@@ -214,6 +249,7 @@ const QueueCard = ({ label, count, color, bg, icon, onClick }) => (
   </div>
 );
 
+// SVG Icons
 const CircleIcon = ({ color }) => (<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke={color} strokeWidth="2" fill="none"/><circle cx="12" cy="12" r="4" fill={color} opacity="0.3"/></svg>);
 const CheckIcon = ({ color }) => (<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke={color} strokeWidth="2" fill="none"/><path d="M8 12l3 3 5-5" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>);
 const ProgressIcon = ({ color }) => (<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke={color} strokeWidth="2" fill="none"/><path d="M12 6v6l4 2" stroke={color} strokeWidth="2" strokeLinecap="round"/></svg>);

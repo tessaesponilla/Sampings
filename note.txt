@@ -1,6 +1,6 @@
 TODO:
-fix priority
-qr scanner and upload qr option sa mismo nga app(untested)
+in live trackings (way ga work ang upload QR image) pwede man ukson ta sa since gagana na QR scan kag field for order number
+account settings (change password not working)
 testing
 error validation
 media-query for responsizeness

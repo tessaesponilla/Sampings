@@ -8,7 +8,7 @@
     const handlePrint = () => {
         const content = receiptRef.current;
         const printWindow = window.open('', '_blank', 'width=400,height=700');
-        
+
         printWindow.document.write(`
         <html>
             <head>
@@ -32,6 +32,9 @@
                 .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 700; }
                 .badge-walkin { background: #fef3c7; color: #d97706; }
                 .badge-online { background: #dbeafe; color: #1d4ed8; }
+                .signature-box { border: 1px dashed #9ca3af; border-radius: 6px; padding: 12px; text-align: center; margin-bottom: 8px; }
+                .signature-box span { font-size: 10px; color: #9ca3af; }
+                .signature-box .space { height: 40px; }
                 @media print {
                 body { padding: 0; }
                 button { display: none; }
@@ -44,35 +47,58 @@
             </body>
         </html>
         `);
-        
+
         printWindow.document.close();
     };
 
     const formatDate = (date) => {
         if (!date) return '—';
         return new Date(date).toLocaleDateString('en-US', {
-        year: 'numeric', month: 'short', day: 'numeric',
-        hour: '2-digit', minute: '2-digit'
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
         });
     };
 
     return (
         <div style={{
-        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        zIndex: 1000, padding: '20px'
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(0,0,0,0.6)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 1000,
+        padding: '20px'
         }}>
         <div style={{
-            maxWidth: '420px', width: '100%', maxHeight: '90vh',
-            overflow: 'auto', background: 'white', borderRadius: '16px',
+            maxWidth: '420px',
+            width: '100%',
+            maxHeight: '90vh',
+            overflow: 'auto',
+            background: 'white',
+            borderRadius: '16px',
             boxShadow: '0 20px 60px rgba(0,0,0,0.3)'
         }}>
             {/* Receipt Content */}
             <div ref={receiptRef} style={{ padding: '24px' }}>
             {/* Header */}
-            <div style={{ textAlign: 'center', borderBottom: '2px dashed #e5e7eb', paddingBottom: '16px', marginBottom: '16px' }}>
+            <div style={{
+                textAlign: 'center',
+                borderBottom: '2px dashed #e5e7eb',
+                paddingBottom: '16px',
+                marginBottom: '16px'
+            }}>
                 <img src={logo} alt="Sampings" style={{ height: '50px', marginBottom: '8px' }} />
-                <h2 style={{ fontSize: '16px', fontWeight: 800, letterSpacing: '1px', margin: '4px 0', color: '#0f193c' }}>
+                <h2 style={{
+                fontSize: '16px',
+                fontWeight: 800,
+                letterSpacing: '1px',
+                margin: '4px 0',
+                color: '#0f193c'
+                }}>
                 SAMPINGS SPORTSWEAR
                 </h2>
                 <p style={{ fontSize: '10px', color: '#6b7280', margin: '2px 0' }}>
@@ -85,14 +111,27 @@
 
             {/* Order Info */}
             <div style={{ marginBottom: '16px' }}>
-                <h4 style={{ fontSize: '11px', fontWeight: 700, borderBottom: '1px solid #e5e7eb', paddingBottom: '4px', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '1px', color: '#374151' }}>
+                <h4 style={{
+                fontSize: '11px',
+                fontWeight: 700,
+                borderBottom: '1px solid #e5e7eb',
+                paddingBottom: '4px',
+                marginBottom: '8px',
+                textTransform: 'uppercase',
+                letterSpacing: '1px',
+                color: '#374151'
+                }}>
                 Order Details
                 </h4>
                 <Row label="Order Number" value={order.orderNumber || `#${order.orderId?.slice(-6)}`} />
                 <Row label="Date" value={formatDate(order.orderDate || new Date())} />
                 <Row label="Type" value={
                 <span style={{
-                    display: 'inline-block', padding: '2px 10px', borderRadius: '10px', fontSize: '10px', fontWeight: 700,
+                    display: 'inline-block',
+                    padding: '2px 10px',
+                    borderRadius: '10px',
+                    fontSize: '10px',
+                    fontWeight: 700,
                     background: order.orderType === 'online' ? '#dbeafe' : '#fef3c7',
                     color: order.orderType === 'online' ? '#1d4ed8' : '#d97706'
                 }}>
@@ -108,7 +147,16 @@
 
             {/* Customer Info */}
             <div style={{ marginBottom: '16px' }}>
-                <h4 style={{ fontSize: '11px', fontWeight: 700, borderBottom: '1px solid #e5e7eb', paddingBottom: '4px', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '1px', color: '#374151' }}>
+                <h4 style={{
+                fontSize: '11px',
+                fontWeight: 700,
+                borderBottom: '1px solid #e5e7eb',
+                paddingBottom: '4px',
+                marginBottom: '8px',
+                textTransform: 'uppercase',
+                letterSpacing: '1px',
+                color: '#374151'
+                }}>
                 Customer Information
                 </h4>
                 <Row label="Name" value={order.customerName} />
@@ -118,13 +166,30 @@
 
             {/* Order Summary */}
             <div style={{ marginBottom: '16px' }}>
-                <h4 style={{ fontSize: '11px', fontWeight: 700, borderBottom: '1px solid #e5e7eb', paddingBottom: '4px', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '1px', color: '#374151' }}>
+                <h4 style={{
+                fontSize: '11px',
+                fontWeight: 700,
+                borderBottom: '1px solid #e5e7eb',
+                paddingBottom: '4px',
+                marginBottom: '8px',
+                textTransform: 'uppercase',
+                letterSpacing: '1px',
+                color: '#374151'
+                }}>
                 Order Summary
                 </h4>
                 <Row label="Jersey Type" value={order.jerseyType === 'full-set' ? 'Full Jersey Set' : 'Top Only'} />
                 <Row label="Price per Item" value={`₱${(order.pricePerItem || (order.jerseyType === 'full-set' ? 800 : 400)).toLocaleString()}`} />
                 <Row label="Quantity" value={`${order.quantity} items`} />
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', fontWeight: 800, borderTop: '2px solid #0f193c', paddingTop: '8px', marginTop: '8px' }}>
+                <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                fontSize: '14px',
+                fontWeight: 800,
+                borderTop: '2px solid #0f193c',
+                paddingTop: '8px',
+                marginTop: '8px'
+                }}>
                 <span>TOTAL</span>
                 <span style={{ color: '#0f193c' }}>₱{(order.totalAmount || 0).toLocaleString()}</span>
                 </div>
@@ -132,18 +197,72 @@
 
             {/* Staff Info */}
             <div style={{ marginBottom: '16px' }}>
-                <h4 style={{ fontSize: '11px', fontWeight: 700, borderBottom: '1px solid #e5e7eb', paddingBottom: '4px', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '1px', color: '#374151' }}>
+                <h4 style={{
+                fontSize: '11px',
+                fontWeight: 700,
+                borderBottom: '1px solid #e5e7eb',
+                paddingBottom: '4px',
+                marginBottom: '8px',
+                textTransform: 'uppercase',
+                letterSpacing: '1px',
+                color: '#374151'
+                }}>
                 Processed By
                 </h4>
                 <Row label="Staff" value={staffName || order.processedByName || '—'} />
             </div>
 
+            {/* Signature Area */}
+            <div style={{ marginBottom: '16px' }}>
+                <h4 style={{
+                fontSize: '11px',
+                fontWeight: 700,
+                borderBottom: '1px solid #e5e7eb',
+                paddingBottom: '4px',
+                marginBottom: '8px',
+                textTransform: 'uppercase',
+                letterSpacing: '1px',
+                color: '#374151'
+                }}>
+                Payment Acknowledgement
+                </h4>
+                <p style={{
+                fontSize: '10px',
+                color: '#6b7280',
+                marginBottom: '12px',
+                fontWeight: 500
+                }}>
+                Please present this receipt when paying.
+                </p>
+                <div style={{
+                border: '1px dashed #9ca3af',
+                borderRadius: '6px',
+                padding: '12px',
+                textAlign: 'center',
+                marginBottom: '8px'
+                }}>
+                <span style={{ fontSize: '10px', color: '#9ca3af' }}>Signature / Mark</span>
+                <div style={{ height: '40px' }}></div>
+                </div>
+            </div>
+
             {/* QR Code */}
-            <div style={{ textAlign: 'center', padding: '16px', border: '1px solid #e5e7eb', borderRadius: '12px', marginBottom: '12px' }}>
-                <p style={{ fontSize: '10px', color: '#6b7280', marginBottom: '8px', fontWeight: 600 }}>
+            <div style={{
+                textAlign: 'center',
+                padding: '16px',
+                border: '1px solid #e5e7eb',
+                borderRadius: '12px',
+                marginBottom: '12px'
+            }}>
+                <p style={{
+                fontSize: '10px',
+                color: '#6b7280',
+                marginBottom: '8px',
+                fontWeight: 600
+                }}>
                 Scan to track your order
                 </p>
-                <QRCodeSVG 
+                <QRCodeSVG
                 value={`https://sampings-8e8d3.web.app/track/${order.orderNumber || order.orderId}`}
                 size={120}
                 />
@@ -153,7 +272,13 @@
             </div>
 
             {/* Footer */}
-            <div style={{ textAlign: 'center', fontSize: '10px', color: '#9ca3af', borderTop: '1px dashed #e5e7eb', paddingTop: '12px' }}>
+            <div style={{
+                textAlign: 'center',
+                fontSize: '10px',
+                color: '#9ca3af',
+                borderTop: '1px dashed #e5e7eb',
+                paddingTop: '12px'
+            }}>
                 <p>Thank you for choosing Sampings!</p>
                 <p>For inquiries, please contact us.</p>
                 <p style={{ marginTop: '4px' }}>{formatDate(new Date())}</p>
@@ -161,12 +286,25 @@
             </div>
 
             {/* Buttons */}
-            <div style={{ display: 'flex', gap: '10px', padding: '16px 24px', borderTop: '1px solid #e5e7eb', background: '#f9fafb', borderRadius: '0 0 16px 16px' }}>
+            <div style={{
+            display: 'flex',
+            gap: '10px',
+            padding: '16px 24px',
+            borderTop: '1px solid #e5e7eb',
+            background: '#f9fafb',
+            borderRadius: '0 0 16px 16px'
+            }}>
             <button
                 onClick={handlePrint}
                 style={{
-                flex: 1, padding: '12px', background: '#0f193c', color: 'white',
-                border: 'none', borderRadius: '10px', fontWeight: 700, fontSize: '14px',
+                flex: 1,
+                padding: '12px',
+                background: '#0f193c',
+                color: 'white',
+                border: 'none',
+                borderRadius: '10px',
+                fontWeight: 700,
+                fontSize: '14px',
                 cursor: 'pointer'
                 }}
             >
@@ -175,8 +313,14 @@
             <button
                 onClick={onClose}
                 style={{
-                flex: 1, padding: '12px', background: '#e5e7eb', color: '#374151',
-                border: 'none', borderRadius: '10px', fontWeight: 600, fontSize: '14px',
+                flex: 1,
+                padding: '12px',
+                background: '#e5e7eb',
+                color: '#374151',
+                border: 'none',
+                borderRadius: '10px',
+                fontWeight: 600,
+                fontSize: '14px',
                 cursor: 'pointer'
                 }}
             >
@@ -189,7 +333,12 @@
     };
 
     const Row = ({ label, value }) => (
-    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', margin: '4px 0' }}>
+    <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        fontSize: '11px',
+        margin: '4px 0'
+    }}>
         <span style={{ color: '#6b7280' }}>{label}</span>
         <span style={{ fontWeight: 600, textAlign: 'right' }}>{value}</span>
     </div>

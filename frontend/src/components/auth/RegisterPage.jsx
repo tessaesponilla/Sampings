@@ -231,7 +231,7 @@ const RegisterPage = () => {
                 top: '28px',
                 background: 'none',
                 border: 'none',
-                color: 'rgba(34, 97, 212, 0.6)',
+                color: 'rgba(0, 0, 0, 0.6)',
                 cursor: 'pointer',
                 padding: '2px'
               }}
