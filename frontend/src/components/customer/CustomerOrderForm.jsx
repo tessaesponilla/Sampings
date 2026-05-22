@@ -1,10 +1,11 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { createOrder, uploadDesignImage } from '../../services/orderService';
 import { QRCodeSVG } from 'qrcode.react';
 import OrderReceipt from '../common/OrderReceipt';
 import fullSetImg from '../../assets/full.png';
 import topOnlyImg from '../../assets/toponly.png';
+import '../../styles/responsive.css';
 
 const CustomerOrderForm = () => {
   const { currentUser, userData } = useAuth();
@@ -23,7 +24,7 @@ const CustomerOrderForm = () => {
   const [showReceipt, setShowReceipt] = useState(false);
   const fileInputRef = useRef(null);
 
-const jerseyOptions = [
+const [jerseyOptions, setJerseyOptions] = useState([
   { 
     value: 'full-set', 
     label: 'Full Jersey Set', 
@@ -31,6 +32,7 @@ const jerseyOptions = [
     image: fullSetImg, 
     description: 'Complete uniform with shirt and shorts' 
   },
+
   { 
     value: 'top-only', 
     label: 'Top Only', 
@@ -38,7 +40,21 @@ const jerseyOptions = [
     image: topOnlyImg, 
     description: 'Jersey shirt only, no bottom shorts' 
   },
-];
+]);
+
+useEffect(() => {
+  const loadPrices = async () => {
+    const { getJerseyPrices } = await import('../../services/orderService');
+    const result = await getJerseyPrices();
+    if (result.success) {
+      setJerseyOptions(prev => prev.map(opt => ({
+        ...opt,
+        price: result.prices[opt.value]
+      })));
+    }
+  };
+  loadPrices();
+}, []);
 
   const handleItemChange = (index, field, value) => {
     const newItems = [...formData.items];
@@ -49,7 +65,7 @@ const jerseyOptions = [
   const addItemRow = () => setFormData(prev => ({ ...prev, items: [...prev.items, { size: '', number: '', surname: '' }] }));
   
   const removeItemRow = (index) => {
-    if (formData.items.length > 1) setFormData(prev => ({ ...prev, items: formData.items.filter((_, i) => i !== index) }));
+    if (formData.items.length > 1) setFormData(prev => ({ ...prev, items: prev.items.filter((_, i) => i !== index) }));
   };
 
   const handleImageUpload = (e) => {
@@ -66,6 +82,32 @@ const jerseyOptions = [
     setActiveTab(1);
     setMessage({ type: '', text: '' });
     setLastOrder(null);
+  };
+
+    const validateAndProceedToReview = () => {
+    if (!formData.designImageFile) {
+      setMessage({ type: 'error', text: 'Please upload a design reference image.' });
+      return;
+    }
+    if (formData.items.some(item => !item.size || !item.number || !item.surname)) {
+      setMessage({ type: 'error', text: 'Please fill in all size, number, and surname fields.' });
+      return;
+    }
+    if (formData.items.some(item => !/^\d{1,3}$/.test(item.number))) {
+      setMessage({ type: 'error', text: 'Jersey numbers must be numeric (e.g., 07, 24, 06, 16).' });
+      return;
+    }
+    const numbers = formData.items.map(i => i.number);
+    if (new Set(numbers).size !== numbers.length) {
+      setMessage({ type: 'error', text: 'Duplicate jersey numbers found. Each player must have a unique number.' });
+      return;
+    }
+    if (formData.items.some(item => !/^[a-zA-Z\s\-']+$/.test(item.surname))) {
+      setMessage({ type: 'error', text: 'Surnames should contain letters only.' });
+      return;
+    }
+    setMessage({ type: '', text: '' });
+    setActiveTab(3);
   };
 
   const handleSubmit = async (e) => {
@@ -110,6 +152,23 @@ const jerseyOptions = [
     }
     setIsSubmitting(false);
     setUploadProgress('');
+  };
+
+  const refreshOrderStatus = async () => {
+    if (!lastOrder?.orderId) return;
+    setUploadProgress('Checking status...');
+    try {
+      const { getOrderDetails } = await import('../../services/orderService');
+      const result = await getOrderDetails(lastOrder.orderId);
+      if (result.success) {
+        setLastOrder(prev => ({ ...prev, status: result.order.status }));
+        setMessage({ type: 'success', text: `Status updated to: ${result.order.status}` });
+      }
+    } catch (error) {
+      setMessage({ type: 'error', text: 'Failed to refresh status' });
+    } finally {
+      setUploadProgress('');
+    }
   };
 
   const selectedJersey = jerseyOptions.find(j => j.value === formData.jerseyStyle);
@@ -164,9 +223,9 @@ const jerseyOptions = [
           <div>
             <h3 className="bebas" style={{ fontSize: '24px', marginBottom: '1.5rem' }}>2. Design & Player Details</h3>
             <div style={{ marginBottom: '20px' }}>
-              <label className="form-label">Upload Design (Optional)</label>
+              <label className="form-label">Upload Design</label>
               <div onClick={() => fileInputRef.current.click()} style={{ border: '2px dashed var(--border2)', padding: '20px', borderRadius: '12px', textAlign: 'center', cursor: 'pointer', background: 'var(--off)' }}>
-                {formData.designImage ? <img src={formData.designImage} alt="Preview" style={{ maxHeight: '150px', borderRadius: '8px' }} /> : <div style={{ color: 'var(--muted)' }}>📸 Click to upload</div>}
+                {formData.designImage ? <img src={formData.designImage} alt="Preview" style={{ maxHeight: '150px', borderRadius: '8px' }} /> : <div style={{ color: 'var(--muted)' }}>📤 Click to upload</div>}
                 <input type="file" ref={fileInputRef} onChange={handleImageUpload} hidden accept="image/*" />
               </div>
               {formData.designImage && <button onClick={() => setFormData(prev => ({ ...prev, designImage: null, designImageFile: null }))} style={{ marginTop: '8px', fontSize: '12px', color: 'red', background: 'none', border: 'none', cursor: 'pointer' }}>Remove</button>}
@@ -181,7 +240,26 @@ const jerseyOptions = [
                       <td style={{ padding: '8px' }}><select className="form-input" value={item.size} onChange={(e) => handleItemChange(idx, 'size', e.target.value)} style={{ padding: '6px', fontSize: '12px' }}><option value="">—</option>{['XS','S','M','L','XL','2XL','3XL'].map(s => <option key={s} value={s}>{s}</option>)}</select></td>
                       <td style={{ padding: '8px' }}><input className="form-input" value={item.number} onChange={(e) => handleItemChange(idx, 'number', e.target.value)} placeholder="00" style={{ padding: '6px', width: '60px', fontSize: '12px' }} /></td>
                       <td style={{ padding: '8px' }}><input className="form-input" value={item.surname} onChange={(e) => handleItemChange(idx, 'surname', e.target.value)} placeholder="Surname" style={{ padding: '6px', width: '100%', fontSize: '12px' }} /></td>
-                      <td style={{ padding: '8px', textAlign: 'center' }}>{quantity >= 16 && (idx + 1) % 16 === 0 ? <span style={{ background: 'var(--green)', color: '#fff', padding: '3px 8px', borderRadius: '10px', fontSize: '10px', fontWeight: 700 }}>FREE</span> : <button onClick={() => removeItemRow(idx)} style={{ color: 'red', background: 'none', border: 'none', cursor: 'pointer' }}>✕</button>}</td>
+                     <td style={{ padding: '8px', textAlign: 'center', display: 'flex', alignItems: 'center', gap: '4px', justifyContent: 'center' }}>
+                        {quantity >= 16 && (idx + 1) % 16 === 0 && (
+                          <span style={{ background: 'var(--green)', color: '#fff', padding: '3px 8px', borderRadius: '10px', fontSize: '10px', fontWeight: 700 }}>FREE</span>
+                        )}
+                        <button
+                          title="Clear fields"
+                          onClick={() => {
+                            handleItemChange(idx, 'size', '');
+                            handleItemChange(idx, 'number', '');
+                            handleItemChange(idx, 'surname', '');
+                          }}
+                          style={{ color: 'red', background: 'var(--off)', border: '1px solid var(--border2)', borderRadius: '6px', cursor: 'pointer', padding: '2px 6px', fontSize: '12px' }}
+                        >✕</button>
+                        <button
+                          title="Remove row"
+                          onClick={() => removeItemRow(idx)}
+                          disabled={formData.items.length === 1 && !item.size && !item.number && !item.surname}
+                          style={{ color: formData.items.length === 1 && !item.size && !item.number && !item.surname ? 'var(--muted)' : 'red', background: 'var(--off)', border: '1px solid var(--border2)', borderRadius: '6px', cursor: formData.items.length === 1 && !item.size && !item.number && !item.surname ? 'not-allowed' : 'pointer', padding: '2px 6px', fontSize: '12px' }}
+                        >—</button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -189,7 +267,14 @@ const jerseyOptions = [
             </div>
             <button className="action-btn" onClick={addItemRow} style={{ marginBottom: '20px' }}>+ Add Player</button>
             <div style={{ padding: '10px 14px', background: quantity >= 16 ? 'var(--green-bg)' : 'var(--accent2)', borderRadius: '8px', fontSize: '12px', color: quantity >= 16 ? 'var(--green)' : 'var(--navy)', fontWeight: 600, marginBottom: '20px' }}>{quantity >= 16 ? `✅ ${quantity} items = ${freeItems} free!` : `📋 ${quantity} item(s)`}</div>
-            <div style={{ display: 'flex', gap: '10px' }}><button className="btn-secondary" onClick={() => setActiveTab(1)}>← Back</button><button className="btn-yellow" onClick={() => setActiveTab(3)}>Review Order →</button></div>
+            
+            {message.type === 'error' && message.text && (
+              <div style={{ padding: '10px 14px', background: 'var(--red-bg)', color: 'var(--red)', borderRadius: '8px', fontSize: '13px', fontWeight: 500, marginBottom: '12px' }}>
+                {message.text}
+              </div>
+            )}
+            
+            <div style={{ display: 'flex', gap: '10px' }}><button className="btn-secondary" onClick={() => setActiveTab(1)}>← Back</button><button className="btn-yellow" onClick={validateAndProceedToReview}>Review Order →</button></div>
           </div>
         )}
 
@@ -208,21 +293,27 @@ const jerseyOptions = [
             </div>
 
             {message.type === 'success' && lastOrder ? (
-              <div>
-                <div style={{ padding: '12px 16px', background: 'var(--green-bg)', color: 'var(--green)', borderRadius: '8px', fontSize: '13px', fontWeight: 500, marginBottom: '16px' }}>{message.text}</div>
-                <div style={{ textAlign: 'center', padding: '20px', background: 'white', borderRadius: '12px', border: '1px solid var(--border)', marginBottom: '16px' }}>
-                  <p style={{ fontWeight: 600, marginBottom: '10px', color: 'var(--navy)' }}>Scan to track:</p>
-                  <QRCodeSVG value={`https://sampings-8e8d3.web.app/track/${lastOrder.orderNumber || lastOrder.orderId}`} size={150} />
+                <div>
+                  <div style={{ padding: '12px 16px', background: 'var(--green-bg)', color: 'var(--green)', borderRadius: '8px', fontSize: '13px', fontWeight: 500, marginBottom: '16px' }}>
+                    {message.text}
+                    <button onClick={refreshOrderStatus} style={{ marginLeft: '15px', padding: '4px 12px', background: 'white', border: '1px solid var(--green)', borderRadius: '6px', fontSize: '12px', cursor: 'pointer' }}>
+                      ↻
+                    </button>
+                  </div>
+                  <div style={{ textAlign: 'center', padding: '20px', background: 'white', borderRadius: '12px', border: '1px solid var(--border)', marginBottom: '16px' }}>
+                    <p style={{ fontWeight: 600, marginBottom: '10px', color: 'var(--navy)' }}>Scan to track:</p>
+                    <QRCodeSVG value={`https://sampings-8e8d3.web.app/track/${lastOrder.orderNumber || lastOrder.orderId}`} size={150} />
+                    <p style={{ marginTop: '10px', fontSize: '12px', color: 'var(--muted)' }}>Current Status: <strong style={{ color: 'var(--navy)' }}>{lastOrder.status}</strong></p>
+                  </div>
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <button onClick={() => setShowReceipt(true)} style={{ flex: 1, padding: '12px', background: 'var(--off)', color: 'var(--navy)', border: '1px solid var(--navy)', borderRadius: '8px', fontWeight: 600, fontSize: '13px', cursor: 'pointer' }}>🖨️ Print Receipt</button>
+                    <button className="btn-yellow" onClick={resetForm} style={{ flex: 1, padding: '12px', fontSize: '13px' }}>Place Another Order →</button>
+                  </div>
                 </div>
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  <button onClick={() => setShowReceipt(true)} style={{ flex: 1, padding: '12px', background: 'var(--off)', color: 'var(--navy)', border: '1px solid var(--navy)', borderRadius: '8px', fontWeight: 600, fontSize: '13px', cursor: 'pointer' }}>🖨️ Print Receipt</button>
-                  <button className="btn-yellow" onClick={resetForm} style={{ flex: 1, padding: '12px', fontSize: '13px' }}>Place Another Order →</button>
-                </div>
-              </div>
-            ) : (
+              ) : (
               <>
                 {message.type === 'error' && message.text && <div style={{ marginTop: '15px', padding: '12px 16px', background: 'var(--red-bg)', color: 'var(--red)', borderRadius: '8px', fontSize: '13px', fontWeight: 500, marginBottom: '16px' }}>{message.text}</div>}
-                <div style={{ display: 'flex', gap: '10px' }}><button className="btn-secondary" onClick={() => setActiveTab(2)}>← Back</button><button type="button" className="btn-yellow" onClick={handleSubmit} disabled={isSubmitting}>{isSubmitting ? 'Submitting...' : '✅ Confirm Order'}</button></div>
+                <div style={{ display: 'flex', gap: '10px' }}><button className="btn-secondary" onClick={() => setActiveTab(2)}>← Back</button><button type="button" className="btn-yellow" onClick={handleSubmit} disabled={isSubmitting}>{isSubmitting ? 'Submitting...' : 'Confirm Order'}</button></div>
               </>
             )}
           </div>

@@ -1,0 +1,257 @@
+@media (max-width: 768px) {
+  .form-grid {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .card {
+    padding: 16px !important;
+  }
+  
+  .btn-yellow, .btn-navy, .btn-secondary {
+    width: 100% !important;
+  }
+  
+  .button-group {
+    flex-direction: column !important;
+  }
+  
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 12px !important;
+  }
+  
+  .jersey-grid {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .queue-cards {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+  }
+  
+  .search-filter-bar {
+    flex-direction: column !important;
+  }
+  
+  .search-filter-bar > div,
+  .search-filter-bar select,
+  .search-filter-bar button {
+    width: 100% !important;
+  }
+  
+  table, .table-responsive {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  
+  td, th {
+    padding: 8px !important;
+    font-size: 11px !important;
+  }
+  
+  .bebas {
+    font-size: 20px !important;
+  }
+  
+  h3.bebas {
+    font-size: 18px !important;
+  }
+  
+  .modal-content {
+    width: 95% !important;
+    margin: 10px !important;
+  }
+  
+  .sidebar {
+    width: 100% !important;
+    position: fixed !important;
+    bottom: 0 !important;
+    top: auto !important;
+    left: 0 !important;
+    flex-direction: row !important;
+    padding: 8px 12px !important;
+    z-index: 100 !important;
+  }
+  
+  .sidebar-logo {
+    display: none !important;
+  }
+  
+  .nav-links {
+    flex-direction: row !important;
+    justify-content: space-around !important;
+    padding: 0 !important;
+  }
+  
+  .nav-link {
+    flex-direction: column !important;
+    padding: 8px !important;
+    font-size: 10px !important;
+    text-align: center !important;
+  }
+  
+  .nav-link svg {
+    margin-right: 0 !important;
+    margin-bottom: 4px !important;
+  }
+  
+  .sidebar-footer {
+    display: none !important;
+  }
+  
+  .tracking-container {
+    padding: 20px 16px !important;
+  }
+  
+  .status-steps {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+  }
+  
+  .jersey-image {
+    width: 60px !important;
+    height: 60px !important;
+  }
+  
+  .progress-steps {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+  
+  .order-table {
+    font-size: 12px !important;
+  }
+  
+  .dashboard-header {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  
+  .reports-controls {
+    flex-direction: column !important;
+  }
+  
+  .period-buttons {
+    flex-wrap: wrap !important;
+  }
+  
+  .kpi-cards {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  
+  .chart-container {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .receipt-modal {
+    width: 95% !important;
+    margin: 10px !important;
+  }
+  
+  .receipt-actions {
+    flex-direction: column !important;
+  }
+  
+  .staff-form {
+    flex-direction: column !important;
+  }
+  
+  .filter-controls {
+    flex-direction: column !important;
+  }
+  
+  .pagination {
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-grid {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .queue-cards {
+    grid-template-columns: 1fr !important;
+  }
+  
+  h1, .bebas {
+    font-size: 18px !important;
+  }
+  
+  .stat-value {
+    font-size: 20px !important;
+  }
+  
+  .status-badge {
+    font-size: 10px !important;
+    padding: 2px 8px !important;
+  }
+  
+  td, th {
+    font-size: 10px !important;
+    padding: 6px !important;
+  }
+  
+  .queue-rank {
+    width: 20px !important;
+    height: 20px !important;
+    font-size: 9px !important;
+  }
+  
+  .action-buttons {
+    flex-direction: column !important;
+    gap: 5px !important;
+  }
+  
+  .action-buttons button {
+    width: 100% !important;
+  }
+  
+  .modal-body {
+    padding: 16px !important;
+  }
+  
+  .form-input, .form-select {
+    font-size: 14px !important;
+    padding: 10px !important;
+  }
+  
+  .nav-link {
+    font-size: 9px !important;
+    padding: 6px !important;
+  }
+  
+  .nav-link svg {
+    width: 16px !important;
+    height: 16px !important;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  
+  .queue-cards {
+    grid-template-columns: repeat(3, 1fr) !important;
+  }
+  
+  .jersey-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  
+  .form-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  
+  .kpi-cards {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  
+  .chart-container {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}

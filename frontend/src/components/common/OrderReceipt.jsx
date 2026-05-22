@@ -1,6 +1,7 @@
     import React, { useRef } from 'react';
     import { QRCodeSVG } from 'qrcode.react';
     import logo from '../../assets/logo.png';
+    import '../../styles/responsive.css';
 
     const OrderReceipt = ({ order, staffName, onClose }) => {
     const receiptRef = useRef(null);
@@ -246,7 +247,6 @@
                 </div>
             </div>
 
-            {/* QR Code */}
             <div style={{
                 textAlign: 'center',
                 padding: '16px',
@@ -270,8 +270,7 @@
                 {order.orderNumber || order.orderId?.slice(-6)}
                 </p>
             </div>
-
-            {/* Footer */}
+            
             <div style={{
                 textAlign: 'center',
                 fontSize: '10px',

@@ -2,7 +2,9 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { loginUser } from '../../services/authService';
 import { useAuth } from '../../contexts/AuthContext';
+import { checkLoginAttempts, recordFailedAttempt, clearLoginAttempts } from '../../services/userService';
 import logo from '../../assets/logo.png';
+import '../../styles/responsive.css';
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -12,37 +14,53 @@ const LoginPage = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [failedAttempts, setFailedAttempts] = useState(0);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
-    try {
-      const result = await loginUser(email, password);
-      
-      if (result.success) {
-        setUserData(result.userData);
+  const lockStatus = await checkLoginAttempts(email);
+  if (lockStatus.locked) {
+    setError(`Account temporarily locked. Try again in ${lockStatus.remainingMin} minute(s).`);
+    setLoading(false);
+    return;
+  }
 
-        const role = result.userData.role;
-        if (role === 'customer') {
-          navigate('/customer/dashboard');
-        } else if (role === 'staff') {
-          navigate('/staff/queue');
-        } else if (role === 'owner') {
-          navigate('/owner/dashboard');
-        } else {
-          navigate('/');
-        }
+  try {
+    const result = await loginUser(email, password);
+
+    if (result.success) {
+      await clearLoginAttempts(email);  
+      setFailedAttempts(0); 
+      setUserData(result.userData);
+
+      const role = result.userData.role;
+      if (role === 'customer') navigate('/customer/dashboard');
+      else if (role === 'staff') navigate('/staff/queue');
+      else if (role === 'owner') navigate('/owner/dashboard');
+      else navigate('/');
+    } else {
+      await recordFailedAttempt(email);  
+
+      const updated = await checkLoginAttempts(email);
+      const newCount = failedAttempts + 1;
+      setFailedAttempts(newCount);
+      if (updated.locked) {
+        setError('Too many failed attempts. Account locked for 15 minutes.');
       } else {
-        setLoading(false);
-        setError(result.error || 'Login failed');
+        const remaining = 5 - newCount;
+        setError(`${result.error || 'Login failed'} — ${remaining} attempt(s) remaining.`);
       }
-    } catch (err) {
       setLoading(false);
-      setError(err.message || 'An error occurred during login');
     }
-  };
+  } catch (err) {
+    await recordFailedAttempt(email);
+    setLoading(false);
+    setError(err.message || 'An error occurred during login');
+  }
+};
 
   return (
     <div className="auth-wrapper" style={{
@@ -55,7 +73,7 @@ const LoginPage = () => {
       justifyContent: 'center',
       padding: '1rem'
     }}>
-      {/* Subtle grid overlay */}
+    
       <div style={{
         position: 'absolute',
         inset: 0,
@@ -76,7 +94,7 @@ const LoginPage = () => {
         zIndex: 2,
         padding: '1.5rem'
       }}>
-        {/* Back button – compact */}
+
         <button
           onClick={() => navigate('/')}
           style={{
@@ -96,7 +114,6 @@ const LoginPage = () => {
           <span style={{ fontSize: '16px' }}>↩</span>
         </button>
 
-        {/* Logo – smaller */}
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}>
           <img src={logo} alt="Sampings Logo" style={{ height: '40px', width: 'auto' }} />
         </div>
@@ -144,7 +161,6 @@ const LoginPage = () => {
             />
           </div>
 
-          {/* Password with Eye Toggle */}
           <div className="form-group" style={{ marginBottom: '18px', position: 'relative' }}>
             <label className="form-label" style={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: '10px', marginBottom: '3px' }}>Password</label>
             <input

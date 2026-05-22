@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { getCustomerOrders } from '../../services/orderService';
 import { useNavigate } from 'react-router-dom';
+import '../../styles/responsive.css';
 
 const CustomerOrders = () => {
   const { currentUser, userData } = useAuth();
@@ -36,6 +37,13 @@ const CustomerOrders = () => {
     return <span style={{ background: s.bg, color: s.color, padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 700 }}>{s.label}</span>;
   };
 
+  const refreshOrders = async () => {
+    setLoading(true);
+    const result = await getCustomerOrders(currentUser.uid);
+    if (result.success) setOrders(result.orders);
+    setLoading(false);
+  };
+
   const filteredOrders = orders.filter(o => {
     const matchesSearch = !searchTerm || 
       o.orderId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -54,7 +62,7 @@ const CustomerOrders = () => {
   return (
     <div className="card">
       <div style={{ display: 'flex', gap: '10px', marginBottom: '1.5rem', alignItems: 'center' }}>
-        <div style={{ position: 'relative', flex: '0 0 70%' }}>
+        <div style={{ position: 'relative', flex: '0 0 60%' }}>
           <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', fontSize: '14px' }}>🔍</span>
           <input type="text" placeholder="Search by Order ID..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
             style={{ width: '100%', padding: '12px 12px 12px 38px', borderRadius: '10px', border: '1px solid var(--border)', fontSize: '13px', background: 'white' }} />
@@ -63,7 +71,7 @@ const CustomerOrders = () => {
           )}
         </div>
         <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
-          style={{ flex: '0 0 30%', padding: '12px 14px', borderRadius: '10px', border: '1px solid var(--border)', fontSize: '13px', background: 'white', color: 'var(--text)', cursor: 'pointer' }}>
+          style={{ flex: '0 0 25%', padding: '12px 14px', borderRadius: '10px', border: '1px solid var(--border)', fontSize: '13px', background: 'white', color: 'var(--text)', cursor: 'pointer' }}>
           <option value="all">📋 All Status</option>
           <option value="pending">🟠 Pending</option>
           <option value="confirmed">🟣 Confirmed</option>
@@ -71,6 +79,10 @@ const CustomerOrders = () => {
           <option value="ready-for-pickup">🔷 Ready</option>
           <option value="completed">🟢 Completed</option>
         </select>
+        <button onClick={refreshOrders} disabled={loading}
+          style={{ flex: '0 0 auto', padding: '12px 16px', borderRadius: '10px', border: '1px solid var(--border)', background: 'white', cursor: loading ? 'default' : 'pointer', opacity: loading ? 0.5 : 1, fontSize: '14px', fontWeight: 500 }}>
+          ↻ {loading ? 'Refreshing...' : 'Refresh'}
+        </button>
       </div>
 
       {filteredOrders.length === 0 ? (

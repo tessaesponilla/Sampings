@@ -2,18 +2,19 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getOrderDetails } from '../../services/orderService';
 import { Html5Qrcode } from 'html5-qrcode';
+import '../../styles/responsive.css';
 
 const LiveTracking = () => {
   const { orderId } = useParams();
   const navigate = useNavigate();
-  const [searchOrderId, setSearchOrderId] = useState(orderId || '');
+  const isValidOrderId = orderId && orderId !== 'guest' && orderId.trim() !== '';
+  const [searchOrderId, setSearchOrderId] = useState(isValidOrderId ? orderId : '');
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showScanner, setShowScanner] = useState(false);
   const scannerRef = useRef(null);
 
-  // Cleanup scanner on unmount
   useEffect(() => {
     return () => {
       if (scannerRef.current) {
@@ -29,7 +30,6 @@ const LiveTracking = () => {
     setError('');
     setOrder(null);
 
-    // Try direct document ID if not starting with ORD-
     if (!searchTerm.startsWith('ORD-')) {
       const result = await getOrderDetails(searchTerm);
       if (result?.success) {
@@ -39,7 +39,6 @@ const LiveTracking = () => {
       }
     }
 
-    // Search by orderNumber
     try {
       const { db } = await import('../../config/firebase');
       const { collection, query, where, getDocs } = await import('firebase/firestore');
@@ -63,18 +62,16 @@ const LiveTracking = () => {
   };
 
   useEffect(() => {
-    if (orderId) {
+    if (orderId && orderId !== 'guest' && orderId.trim() !== '') {
       setSearchOrderId(orderId);
       searchOrder(orderId);
     }
   }, [orderId]);
 
-  // Camera Scanner
   const startScanner = async () => {
     setShowScanner(true);
     setError('');
     try {
-      // Small delay to ensure DOM element is rendered
       await new Promise(resolve => setTimeout(resolve, 100));
       const html5QrCode = new Html5Qrcode("qr-reader");
       scannerRef.current = html5QrCode;
@@ -82,7 +79,6 @@ const LiveTracking = () => {
         { facingMode: "environment" },
         { fps: 10, qrbox: { width: 250, height: 250 } },
         async (decodedText) => {
-          // Stop scanner after successful scan
           await html5QrCode.stop();
           setShowScanner(false);
           let extractedId = decodedText;
@@ -92,7 +88,7 @@ const LiveTracking = () => {
           setSearchOrderId(extractedId);
           searchOrder(extractedId);
         },
-        () => {} // ignore scan errors
+        () => {}
       );
     } catch (err) {
       console.error('Scanner error:', err);
@@ -111,26 +107,35 @@ const LiveTracking = () => {
     setShowScanner(false);
   };
 
-  // Upload QR Image
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    
     setLoading(true);
     setError('');
+    
     try {
       const html5QrCode = new Html5Qrcode("qr-reader-file");
       const decodedText = await html5QrCode.scanFile(file, true);
+      await html5QrCode.clear();
+      
       let extractedId = decodedText;
       if (decodedText.includes('/track/')) {
         extractedId = decodedText.split('/track/').pop();
+      } else if (decodedText.includes('/order/')) {
+        extractedId = decodedText.split('/order/').pop();
       }
+      
       setSearchOrderId(extractedId);
       await searchOrder(extractedId);
+      
     } catch (err) {
       console.error('Upload error:', err);
-      setError('Could not read QR code from image. Please try a clearer image or use the camera.');
+      setError('Could not read QR code from image. Please make sure the QR code is clear and well-lit.');
+    } finally {
+      setLoading(false);
+      e.target.value = '';
     }
-    setLoading(false);
   };
 
   const getStatusStep = (status) => {
@@ -161,7 +166,7 @@ const LiveTracking = () => {
       padding: '40px 20px'
     }}>
       <div style={{ maxWidth: '600px', margin: '0 auto' }}>
-        {/* Back Button */}
+    
         <button 
           onClick={() => navigate('/')}
           style={{
@@ -175,18 +180,16 @@ const LiveTracking = () => {
           ↩
         </button>
 
-        {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <div className="bebas" style={{ fontSize: '36px', color: 'white', letterSpacing: '0.05em' }}>SAMPINGS</div>
           <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '14px' }}>Track your order in real-time</p>
         </div>
 
-        {/* Search & Scan */}
         <div style={{ marginBottom: '2rem' }}>
           <form onSubmit={(e) => { e.preventDefault(); searchOrder(); }} style={{ marginBottom: '12px' }}>
             <div style={{ display: 'flex', gap: '8px' }}>
               <input type="text" value={searchOrderId} onChange={(e) => setSearchOrderId(e.target.value)}
-                placeholder="Enter Order Number (e.g. ORD-0001)"
+                placeholder="Enter Order Number"
                 style={{ flex: 1, padding: '14px 18px', borderRadius: '12px', border: '2px solid rgba(255,255,255,0.2)',
                   background: 'rgba(255,255,255,0.1)', color: 'white', fontSize: '16px' }} />
               <button type="submit" disabled={loading}
@@ -210,7 +213,7 @@ const LiveTracking = () => {
                 style={{ flex: 1, padding: '12px', borderRadius: '12px', border: '2px dashed rgba(255,255,255,0.3)',
                   background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.8)', fontWeight: 600,
                   fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                🖼️ Upload QR Image
+                📤 Upload QR Image
               </button>
             </div>
           ) : (
@@ -289,6 +292,7 @@ const LiveTracking = () => {
           </div>
         )}
       </div>
+      <div id="qr-reader-file" style={{ display: 'none' }}></div>
     </div>
   );
 };

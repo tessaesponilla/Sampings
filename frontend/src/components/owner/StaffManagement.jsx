@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { registerStaff } from '../../services/authService';
+import '../../styles/responsive.css';
 
 const StaffManagement = () => {
   const [staffList, setStaffList] = useState([]);

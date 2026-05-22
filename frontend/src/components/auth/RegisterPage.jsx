@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { registerCustomer } from '../../services/authService';
 import { useAuth } from '../../contexts/AuthContext';
 import logo from '../../assets/logo.png';
+import '../../styles/responsive.css';
 
 const RegisterPage = () => {
   const navigate = useNavigate();
@@ -32,8 +33,20 @@ const RegisterPage = () => {
       return;
     }
 
-    if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters');
+    if (formData.password.length < 8) {
+      setError('Password must be at least 8 characters.');
+      return;
+    }
+    if (!/[A-Z]/.test(formData.password)) {
+      setError('Password must include at least one uppercase letter.');
+      return;
+    }
+    if (!/[a-z]/.test(formData.password)) {
+      setError('Password must include at least one lowercase letter.');
+      return;
+    }
+    if (!/[0-9]/.test(formData.password)) {
+      setError('Password must include at least one number.');
       return;
     }
 

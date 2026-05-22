@@ -5,10 +5,19 @@ import {
 } from 'firebase/firestore';
 import { db, auth } from '../config/firebase';
 
+
 export const createOrder = async (orderData) => {
   try {
     const batch = writeBatch(db);
-    const pricePerItem = orderData.jerseyType === 'full-set' ? 800 : 400;
+    
+    const pricesDoc = await getDoc(doc(db, 'settings', 'jerseyPrices'));
+    let pricePerItem;
+    if (pricesDoc.exists()) {
+      pricePerItem = pricesDoc.data()[orderData.jerseyType];
+    } else {
+      pricePerItem = orderData.jerseyType === 'full-set' ? 800 : 400;
+    }
+    
     const totalAmount = pricePerItem * orderData.items.length;
     const userId = auth.currentUser?.uid;
 
@@ -351,6 +360,34 @@ export const getOwnerInsights = async (period = 'all') => {
       ? (insights.orderStatusBreakdown.completed / insights.totalOrders) * 100 : 0;
 
     return { success: true, insights };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+};
+
+const JERSEY_PRICES_CONFIG_ID = 'jerseyPrices';
+
+export const getJerseyPrices = async () => {
+  try {
+    const docRef = doc(db, 'settings', JERSEY_PRICES_CONFIG_ID);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      return { success: true, prices: docSnap.data() };
+    } else {
+      const defaultPrices = { 'full-set': 800, 'top-only': 400 };
+      await setDoc(docRef, defaultPrices);
+      return { success: true, prices: defaultPrices };
+    }
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+};
+
+export const updateJerseyPrice = async (jerseyType, newPrice) => {
+  try {
+    const docRef = doc(db, 'settings', JERSEY_PRICES_CONFIG_ID);
+    await setDoc(docRef, { [jerseyType]: newPrice }, { merge: true });
+    return { success: true };
   } catch (error) {
     return { success: false, error: error.message };
   }

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { getOwnerInsights } from '../../services/orderService';
+import '../../styles/responsive.css';
 
 const OwnerDashboard = () => {
   const { userData } = useAuth();

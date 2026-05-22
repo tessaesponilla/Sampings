@@ -1,4 +1,5 @@
 import React from 'react';
+import '../../styles/responsive.css';
 
 const OrderTable = ({ orders }) => {
   return (

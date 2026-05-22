@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { getCustomerOrders, getCustomerStats } from '../../services/orderService';
 import { useNavigate } from 'react-router-dom';
+import '../../styles/responsive.css';
 
 const CustomerDashboard = () => {
   const { userData, currentUser } = useAuth();

@@ -1,6 +1,7 @@
     import React, { useState, useEffect } from 'react';
     import { useParams, useNavigate } from 'react-router-dom';
     import { getOrderDetails } from '../../services/orderService';
+    import '../../styles/responsive.css';
 
     const OrderDetailPage = () => {
     const { orderId } = useParams();
@@ -54,7 +55,6 @@
 
     return (
         <div>
-        {/* Header Card with Back Button Inside */}
         <div className="card" style={{ padding: '20px 24px', marginBottom: '16px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '16px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -84,7 +84,6 @@
                 {getStatusBadge(order.status)}
             </div>
 
-            {/* Tabs – unchanged */}
             <div style={{ display: 'flex', gap: '4px', background: 'var(--off)', borderRadius: '10px', padding: '4px', width: 'fit-content' }}>
                 {tabs.map(tab => (
                 <button key={tab.key} onClick={() => setActiveTab(tab.key)}
@@ -101,9 +100,7 @@
             </div>
             </div>
 
-        {/* Tab Content */}
         <div className="card" style={{ padding: '24px', minHeight: '300px' }}>
-            {/* INFO TAB */}
             {activeTab === 'info' && (
             <div style={{ maxWidth: '500px' }}>
                 <InfoRow label="Customer" value={order.customerName} />
@@ -118,7 +115,6 @@
             </div>
             )}
 
-            {/* PLAYERS TAB */}
             {activeTab === 'players' && (
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
@@ -148,7 +144,6 @@
             </table>
             )}
 
-            {/* TIMELINE TAB */}
             {activeTab === 'timeline' && (
             <div style={{ borderLeft: '2px solid var(--border)', paddingLeft: '20px', marginLeft: '8px', maxWidth: '500px' }}>
                 {!order.statusHistory || order.statusHistory.length === 0 ? (
@@ -167,7 +162,6 @@
             </div>
             )}
 
-            {/* DESIGN TAB */}
             {activeTab === 'design' && (
             order.designReferenceURL ? (
                 <div style={{ textAlign: 'center' }}>

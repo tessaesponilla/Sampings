@@ -18,6 +18,7 @@ import OwnerReports from './components/owner/OwnerReports';
 import ProfileSettings from './components/common/ProfileSettings';
 import LiveTracking from './components/tracking/LiveTracking';
 import OrderDetailPage from './components/common/OrderDetailPage';
+import PriceSettings from './components/owner/PriceSettings';
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { currentUser, userData, loading } = useAuth();
@@ -98,6 +99,7 @@ function App() {
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/track/:orderId" element={<LiveTracking />} />
           <Route path="/track" element={<LiveTracking />} />
+          <Route path="/track/:orderId" element={<LiveTracking />} />
 
           {/* Customer Routes */}
           <Route path="/customer/dashboard" element={
@@ -164,6 +166,13 @@ function App() {
             <ProtectedRoute allowedRoles={['owner']}>
               <AppLayout title="Staff Management">
                 <StaffManagement />
+              </AppLayout>
+            </ProtectedRoute>
+          } />
+         <Route path="/owner/price-settings" element={
+            <ProtectedRoute allowedRoles={['owner']}>
+              <AppLayout title="Price Settings">
+                <PriceSettings />
               </AppLayout>
             </ProtectedRoute>
           } />

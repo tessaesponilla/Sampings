@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { updateUserProfile, changeUserPassword } from '../../services/userService';
+import '../../styles/responsive.css';
 
 const ProfileSettings = () => {
   const { userData, currentUser } = useAuth();
   const [activeTab, setActiveTab] = useState('profile');
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -48,8 +50,24 @@ const ProfileSettings = () => {
       setPasswordMsg({ type: 'error', text: 'New passwords do not match!' });
       return;
     }
-    if (passwordForm.newPassword.length < 6) {
-      setPasswordMsg({ type: 'error', text: 'New password must be at least 6 characters.' });
+    if (passwordForm.newPassword.length < 8) {
+      setPasswordMsg({ type: 'error', text: 'New password must be at least 8 characters.' });
+      return;
+    }
+    if (!/[A-Z]/.test(passwordForm.newPassword)) {
+      setPasswordMsg({ type: 'error', text: 'Password must include at least one uppercase letter.' });
+      return;
+    }
+    if (!/[a-z]/.test(passwordForm.newPassword)) {
+      setPasswordMsg({ type: 'error', text: 'Password must include at least one lowercase letter.' });
+      return;
+    }
+    if (!/[0-9]/.test(passwordForm.newPassword)) {
+      setPasswordMsg({ type: 'error', text: 'Password must include at least one number.' });
+      return;
+    }
+    if (passwordForm.newPassword === passwordForm.currentPassword) {
+      setPasswordMsg({ type: 'error', text: 'New password must be different from your current password.' });
       return;
     }
 
@@ -118,21 +136,30 @@ const ProfileSettings = () => {
       {/* Password Tab */}
       {activeTab === 'password' && (
         <form onSubmit={handlePasswordChange}>
-          {/* Current Password */}
-          <div className="form-group" style={{ marginBottom: '16px' }}>
+          <div className="form-group" style={{ marginBottom: '16px', position: 'relative' }}>
             <label className="form-label">Current Password</label>
             <input
               className="form-input"
-              type="password"
+              type={showCurrentPassword ? 'text' : 'password'}
               value={passwordForm.currentPassword}
               onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
               placeholder="Enter current password"
               style={{ width: '100%' }}
               required
             />
+            <button
+              type="button"
+              onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+              style={{ position: 'absolute', right: '8px', top: '32px', background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', padding: '2px' }}
+            >
+              {showCurrentPassword ? (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+              ) : (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+              )}
+            </button>
           </div>
 
-          {/* New Password with eye toggle */}
           <div className="form-group" style={{ marginBottom: '16px', position: 'relative' }}>
             <label className="form-label">New Password</label>
             <input
@@ -157,7 +184,6 @@ const ProfileSettings = () => {
             </button>
           </div>
 
-          {/* Confirm New Password with eye toggle */}
           <div className="form-group" style={{ marginBottom: '20px', position: 'relative' }}>
             <label className="form-label">Confirm New Password</label>
             <input

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { getAllOrders, confirmOrder, updateOrderStatus } from '../../services/orderService';
+import '../../styles/responsive.css';
 
 const StaffQueue = ({ readOnly = false }) => {
   const { userData } = useAuth();
@@ -58,8 +59,7 @@ const StaffQueue = ({ readOnly = false }) => {
   const inProgressCount = orders.filter(o => o.status === 'in-progress').length;
   const readyCount = orders.filter(o => o.status === 'ready-for-pickup').length;
   const completedCount = orders.filter(o => o.status === 'completed').length;
-
-  // Filter and sort
+  
   const filteredOrders = orders
     .filter(o => {
       const matchesSearch = !searchTerm || o.customerName?.toLowerCase().includes(searchTerm.toLowerCase()) || o.orderId?.toLowerCase().includes(searchTerm.toLowerCase()) || o.orderNumber?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -68,27 +68,31 @@ const StaffQueue = ({ readOnly = false }) => {
       if (viewMode === 'completed' && o.status !== 'completed') return false;
       return matchesSearch && matchesStatus;
     })
-    .sort((a, b) => {
-      // Active view: sort by order number (ascending), lower number = higher priority
-      if (viewMode === 'active') {
-        // Extract numeric part from orderNumber (e.g., ORD-0001 → 1)
-        const numA = a.orderNumber ? parseInt(a.orderNumber.replace(/\D/g, ''), 10) : Infinity;
-        const numB = b.orderNumber ? parseInt(b.orderNumber.replace(/\D/g, ''), 10) : Infinity;
-        return numA - numB;
-      }
-      // Default sorting for completed/all views
+   .sort((a, b) => {
       switch (sortBy) {
-        case 'newest': return new Date(b.orderDate) - new Date(a.orderDate);
-        case 'oldest': return new Date(a.orderDate) - new Date(b.orderDate);
-        case 'name-asc': return (a.customerName || '').localeCompare(b.customerName || '');
-        case 'name-desc': return (b.customerName || '').localeCompare(a.customerName || '');
-        default: return new Date(b.orderDate) - new Date(a.orderDate);
+        case 'newest': 
+          return new Date(b.orderDate) - new Date(a.orderDate);
+        case 'oldest': 
+          return new Date(a.orderDate) - new Date(b.orderDate);
+        case 'name-asc': 
+          return (a.customerName || '').localeCompare(b.customerName || '');
+        case 'name-desc': 
+          return (b.customerName || '').localeCompare(a.customerName || '');
+        default: 
+          return new Date(b.orderDate) - new Date(a.orderDate);
       }
     });
-
-  // Pagination
+    
   const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
   const paginatedOrders = filteredOrders.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  const activeQueueRanked = filteredOrders
+  .filter(o => o.status !== 'completed')
+  .sort((a, b) => {
+    const numA = a.orderNumber ? parseInt(a.orderNumber.replace(/\D/g, ''), 10) : Infinity;
+    const numB = b.orderNumber ? parseInt(b.orderNumber.replace(/\D/g, ''), 10) : Infinity;
+    return numA - numB;
+  });
 
   useEffect(() => { setCurrentPage(1); }, [viewMode, searchTerm, statusFilter]);
 
@@ -96,7 +100,6 @@ const StaffQueue = ({ readOnly = false }) => {
 
   return (
     <div>
-      {/* Queue Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px', marginBottom: '20px' }}>
         <QueueCard label="Ready" count={readyCount} color="#2563eb" bg="#dbeafe" icon={<BoxIcon color="#2563eb" />} onClick={() => { setViewMode('active'); setStatusFilter('ready-for-pickup'); }} />
         <QueueCard label="In Progress" count={inProgressCount} color="#3b82f6" bg="#eff6ff" icon={<ProgressIcon color="#3b82f6" />} onClick={() => { setViewMode('active'); setStatusFilter('in-progress'); }} />
@@ -105,7 +108,6 @@ const StaffQueue = ({ readOnly = false }) => {
         <QueueCard label="Completed" count={completedCount} color="#16a34a" bg="#f0fdf4" icon={<FlagIcon color="#16a34a" />} onClick={() => { setViewMode('completed'); setStatusFilter('completed'); }} />
       </div>
 
-      {/* Main Content */}
       <div className="card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
           <h3 className="bebas" style={{ fontSize: '22px', margin: 0 }}>
@@ -121,7 +123,6 @@ const StaffQueue = ({ readOnly = false }) => {
           )}
         </div>
 
-        {/* Search & Sort */}
         <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', flexWrap: 'wrap', alignItems: 'center' }}>
           <div style={{ position: 'relative', flex: 1, minWidth: '220px' }}>
             <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', fontSize: '14px' }}>🔍</span>
@@ -138,14 +139,12 @@ const StaffQueue = ({ readOnly = false }) => {
           </select>
         </div>
 
-        {/* Results Info */}
         <div style={{ marginBottom: '12px', fontSize: '12px', color: 'var(--muted)' }}>
           Showing {paginatedOrders.length} of {filteredOrders.length} orders
           {viewMode === 'active' ? ' in queue' : viewMode === 'completed' ? ' completed' : ''}
           {statusFilter !== 'all' && ` · Filtered by: ${statusFilter.replace(/-/g, ' ')}`}
         </div>
 
-        {/* Orders Table */}
         {filteredOrders.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '40px', color: 'var(--muted)' }}>
             <p style={{ fontSize: '40px' }}>{viewMode === 'completed' ? '🎉' : '📋'}</p>
@@ -168,7 +167,8 @@ const StaffQueue = ({ readOnly = false }) => {
             </thead>
             <tbody>
               {paginatedOrders.map((o, idx) => {
-                const isFirstInQueue = !readOnly && viewMode === 'active' && currentPage === 1 && idx === 0;
+                const queueRank = activeQueueRanked.findIndex(q => q.id === o.id) + 1;
+                const isFirstInQueue = !readOnly && viewMode === 'active' && queueRank === 1;
                 return (
                   <tr key={o.id}
                     onClick={() => navigate(`/${readOnly ? 'owner' : 'staff'}/orders/${o.id}`)}
@@ -183,7 +183,6 @@ const StaffQueue = ({ readOnly = false }) => {
                     onMouseLeave={(e) => { if (!isFirstInQueue) e.currentTarget.style.background = 'transparent'; }}
                     title="Click to view order details"
                   >
-                    {/* Priority Number – sequential rank */}
                     {!readOnly && viewMode === 'active' && (
                       <td style={{ padding: '10px 12px', textAlign: 'center' }}>
                         <span style={{
@@ -193,7 +192,7 @@ const StaffQueue = ({ readOnly = false }) => {
                           background: isFirstInQueue ? '#ea580c' : '#fff7ed',
                           color: isFirstInQueue ? 'white' : '#ea580c'
                         }}>
-                          {(currentPage - 1) * itemsPerPage + idx + 1}
+                         {queueRank || '—'}
                         </span>
                       </td>
                     )}
@@ -220,7 +219,6 @@ const StaffQueue = ({ readOnly = false }) => {
           </table>
         )}
 
-        {/* Pagination */}
         {totalPages > 1 && (
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', marginTop: '20px', paddingTop: '16px', borderTop: '1px solid var(--border)' }}>
             <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'white', cursor: currentPage === 1 ? 'default' : 'pointer', opacity: currentPage === 1 ? 0.5 : 1, fontWeight: 600, fontSize: '13px' }}>← Prev</button>
@@ -235,7 +233,6 @@ const StaffQueue = ({ readOnly = false }) => {
   );
 };
 
-// Queue Card Component
 const QueueCard = ({ label, count, color, bg, icon, onClick }) => (
   <div onClick={onClick} style={{ background: 'white', borderRadius: '14px', padding: '16px 20px', border: '1px solid var(--border)', borderLeft: `4px solid ${color}`, cursor: 'pointer', transition: 'all 0.2s ease', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}
     onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}>
@@ -249,7 +246,6 @@ const QueueCard = ({ label, count, color, bg, icon, onClick }) => (
   </div>
 );
 
-// SVG Icons
 const CircleIcon = ({ color }) => (<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke={color} strokeWidth="2" fill="none"/><circle cx="12" cy="12" r="4" fill={color} opacity="0.3"/></svg>);
 const CheckIcon = ({ color }) => (<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke={color} strokeWidth="2" fill="none"/><path d="M8 12l3 3 5-5" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>);
 const ProgressIcon = ({ color }) => (<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke={color} strokeWidth="2" fill="none"/><path d="M12 6v6l4 2" stroke={color} strokeWidth="2" strokeLinecap="round"/></svg>);
